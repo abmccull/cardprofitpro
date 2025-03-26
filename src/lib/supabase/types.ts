@@ -1,12 +1,14 @@
-export type SportType = 'Soccer' | 'Football' | 'Basketball' | 'Baseball' | 'Hockey';
+export type SportType = 'Soccer' | 'Football' | 'Basketball' | 'Baseball' | 'Hockey' | 'Pokemon' | 'WNBA';
 export type BuyingFormat = 'Auction' | 'Buy_It_Now' | 'Accepts_Offers';
 export type LocationType = 'North_America' | 'US' | 'Worldwide';
 export type UserRole = 'user' | 'admin' | 'va';
-export type CardStatus = 'raw' | 'submitted' | 'graded' | 'listed' | 'sold';
+export type CardStatus = 'Purchased' | 'Watchlist' | 'Sent for Grading' | 'Sold' | 'Listed';
 export type TaskStatus = 'pending' | 'in_progress' | 'completed';
 export type DataSource = 'ebay' | 'psa' | 'other';
 export type SnipeStatus = 'active' | 'processing' | 'completed' | 'error' | 'cancelled';
 export type PSAOrderStatus = 'Order Received' | 'Processing' | 'Shipped' | 'Completed';
+export type GradingCompany = 'PSA' | 'BGS' | 'SGC' | 'HGA' | 'CSG';
+export type CardGrade = '1' | '1.5' | '2' | '2.5' | '3' | '3.5' | '4' | '4.5' | '5' | '5.5' | '6' | '6.5' | '7' | '7.5' | '8' | '8.5' | '9' | '9.5' | '10';
 
 export interface Database {
   public: {
@@ -79,19 +81,22 @@ export interface Database {
           name: string;
           year: number | null;
           manufacturer: string | null;
-          grade: string | null;
+          grade: CardGrade | null;
+          grading_company: GradingCompany | null;
           purchase_price: number | null;
-          current_value: number | null;
           status: CardStatus | null;
           image_url: string | null;
           owner_id: string;
-          created_at: string;
-          updated_at: string;
+          created_at: string | null;
+          updated_at: string | null;
           is_graded: boolean | null;
           sport: SportType | null;
-          buying_format: BuyingFormat | null;
-          location: LocationType | null;
+          buying_format: string | null;
+          location: string | null;
           is_sold: boolean | null;
+          fees: number | null;
+          sales_price: number | null;
+          purchase_link: string | null;
         };
         Insert: Omit<Database['public']['Tables']['cards']['Row'], 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Database['public']['Tables']['cards']['Row']>;
