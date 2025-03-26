@@ -31,6 +31,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "ebay-oauth-nodejs-client": "^1.2.2",
+    "framer-motion": "^11.0.6",
     "lucide-react": "^0.483.0",
     "next": "^15.2.4",
     "openai": "^4.89.0",

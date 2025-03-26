@@ -1,20 +1,15 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
-
-import { Sidebar } from "@/components/dashboard/sidebar";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import type { ActivityItem } from "@/components/dashboard/recent-activity";
-import type { Database } from "@/lib/supabase/types";
+import { createClient } from "@/lib/supabase/client";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
   const user = await currentUser();
   
-  // Initialize Supabase client with proper typing and await cookies
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient<Database>({ cookies: () => cookieStore });
+  // Initialize Supabase client
+  const supabase = createClient();
 
   // Get counts of cards, PSA submissions, total profit
   const { count: cardsCount } = await supabase
@@ -73,74 +68,57 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <div className="flex h-full">
-      <Sidebar />
-      
-      <div className="flex-1 p-6 overflow-auto">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
-            <p className="text-muted-foreground">
-              Welcome to your CardProfit Pro dashboard{user?.firstName ? `, ${user.firstName}` : ''}
-            </p>
-          </div>
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground">
+            Welcome to your CardProfit Pro dashboard{user?.firstName ? `, ${user.firstName}` : ''}
+          </p>
+        </div>
 
-          {/* Stats Grid */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard 
-              title="Active Cards" 
-              value={cardsCount || 0} 
-              iconName="CreditCard"
-              href="/my-cards"
-              accentColor="blue"
-              description="Total cards in your collection"
-            />
-            
-            <StatCard 
-              title="Pending PSA Submissions" 
-              value={psaOrdersCount || 0} 
-              iconName="Award"
-              href="/psa"
-              accentColor="orange"
-              description="Orders being processed by PSA"
-            />
-            
-            <StatCard 
-              title="Total Profit" 
-              value={`$${totalProfit.toFixed(2)}`} 
-              iconName="DollarSign"
-              href="/analytics"
-              accentColor={totalProfit >= 0 ? "green" : "red"}
-              description={`From ${soldCards?.length || 0} sold cards`}
-            />
-            
-            <StatCard 
-              title="Average ROI" 
-              value={`${roi.toFixed(1)}%`} 
-              iconName="TrendingUp"
-              href="/analytics"
-              accentColor={roi >= 0 ? "green" : "red"}
-              description="Return on investment"
-            />
-          </div>
+        {/* Stats Grid */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard 
+            title="Active Cards" 
+            value={cardsCount || 0} 
+            iconName="CreditCard"
+            href="/my-cards"
+            accentColor="blue"
+            description="Total cards in your collection"
+          />
+          
+          <StatCard 
+            title="Pending PSA Submissions" 
+            value={psaOrdersCount || 0} 
+            iconName="Award"
+            href="/psa"
+            accentColor="orange"
+            description="Orders being processed by PSA"
+          />
+          
+          <StatCard 
+            title="Total Profit" 
+            value={`$${totalProfit.toFixed(2)}`} 
+            iconName="DollarSign"
+            href="/analytics"
+            accentColor={totalProfit >= 0 ? "green" : "red"}
+            description={`From ${soldCards?.length || 0} sold cards`}
+          />
+          
+          <StatCard 
+            title="Average ROI" 
+            value={`${roi.toFixed(1)}%`} 
+            iconName="TrendingUp"
+            href="/analytics"
+            accentColor={roi >= 0 ? "green" : "red"}
+            description="Return on investment"
+          />
+        </div>
 
-          {/* Recent Activity */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <RecentActivity activities={activityItems} />
-            
-            <div>
-              <h3 className="font-medium text-lg mb-4">Quick Links</h3>
-              <div className="grid gap-3 grid-cols-1">
-                <StatCard 
-                  title="Market Analysis" 
-                  value="View Reports" 
-                  iconName="BarChart4"
-                  href="/analytics"
-                  className="h-auto"
-                />
-              </div>
-            </div>
-          </div>
+        {/* Recent Activity */}
+        <div className="grid gap-6">
+          <RecentActivity activities={activityItems} />
         </div>
       </div>
     </div>

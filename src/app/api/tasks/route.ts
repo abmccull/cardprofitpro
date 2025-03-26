@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
+import { createClient } from '@/lib/supabase/client';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -14,8 +14,8 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = cookies();
+    const supabase = createClient();
 
     // Get user session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -71,7 +71,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = cookies();
+    const supabase = createClient();
 
     // Get user session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -138,7 +139,9 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const cookieStore = cookies();
     const supabase = createClient();
+
     const { id, ...updates } = await request.json();
     
     const { data, error } = await supabase

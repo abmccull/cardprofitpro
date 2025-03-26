@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import type { CardStatus } from '@/lib/supabase/types';
+import { createClient } from '@/lib/supabase/client';
 
 const cardSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -23,7 +23,8 @@ export async function GET(request: Request) {
     const manufacturer = searchParams.get('manufacturer');
     const maxPrice = searchParams.get('maxPrice');
 
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = cookies();
+    const supabase = createClient();
 
     // Get user session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -112,7 +113,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = cookies();
+    const supabase = createClient();
 
     // Get user session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();

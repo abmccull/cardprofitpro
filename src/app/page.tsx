@@ -199,78 +199,58 @@ export default function Home() {
                       <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      <span className="text-gray-600">{feature}</span>
+                      {feature}
                     </li>
                   ))}
                 </ul>
-                <div className="mt-8">
-                  <Link href="/auth/sign-up" className="block w-full py-3 px-4 bg-green-500 hover:bg-green-600 text-center font-medium rounded-lg text-white">
-                    Start Free Trial
-                  </Link>
-                </div>
+                <Link
+                  href="/auth/sign-up"
+                  className="mt-8 block w-full text-center px-6 py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  Start Free Trial
+                </Link>
               </div>
             </div>
 
-            {/* Team Pro Plan */}
-            <div className="bg-white rounded-xl shadow-xl overflow-hidden transform scale-105">
-              <div className="bg-blue-600 text-white py-2 text-center text-sm font-semibold">
-                BEST VALUE
-              </div>
-              <div className="p-8 border-b border-gray-200">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Team Pro</h3>
+            {/* Pro Trader Plan */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border-4 border-blue-500">
+              <div className="p-8 border-b border-gray-200 bg-blue-50">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Pro Trader</h3>
                 <div className="flex items-baseline">
                   <span className="text-4xl font-bold text-gray-900">$99</span>
                   <span className="text-gray-600 ml-1">/month</span>
                 </div>
-                <p className="mt-4 text-gray-600">Built for serious traders ready to scale with team support.</p>
+                <p className="mt-4 text-gray-600">For serious traders who want to scale their profits.</p>
               </div>
               <div className="p-8">
                 <ul className="space-y-4">
                   {[
                     'Everything in Solo Trader',
-                    'Support for Up to 3 VAs',
-                    'Team Workflow Tools'
+                    'Advanced Market Analytics',
+                    'Priority PSA Submissions',
+                    'Bulk Card Management',
+                    'ROI Forecasting',
+                    'Premium Support'
                   ].map((feature, index) => (
                     <li key={index} className="flex items-center">
                       <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      <span className="text-gray-600">{feature}</span>
+                      {feature}
                     </li>
                   ))}
                 </ul>
-                <div className="mt-8">
-                  <Link href="/auth/sign-up" className="block w-full py-3 px-4 bg-green-500 hover:bg-green-600 text-center font-medium rounded-lg text-white">
-                    Start Free Trial
-                  </Link>
-                </div>
+                <Link
+                  href="/auth/sign-up"
+                  className="mt-8 block w-full text-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Start Free Trial
+                </Link>
               </div>
             </div>
           </div>
-          
-          <p className="text-center text-gray-600 mt-8">
-            No credit card needed for your 14-day free trial.
-          </p>
-        </div>
-      </section>
-
-      {/* Final CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-50 to-blue-100">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-6">
-            Ready to Flip Cards Like a Pro?
-          </h2>
-          <p className="text-xl text-gray-700 mb-8">
-            Join hundreds of traders already turning sports cards into serious profits. Take the first step today!
-          </p>
-          <Link 
-            href="/auth/sign-up" 
-            className="inline-block px-8 py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg text-lg shadow-lg transform transition hover:scale-105"
-          >
-            Start Your Free Trial
-          </Link>
         </div>
       </section>
     </main>
   );
-}
+} 

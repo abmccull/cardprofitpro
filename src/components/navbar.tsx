@@ -21,13 +21,15 @@ export function Navbar() {
   const navItems = isSignedIn
     ? [
         { href: '/dashboard', label: 'Dashboard' },
-        { href: '/top-100', label: 'Top 100' },
+        { href: '/my-cards', label: 'Cards' },
         { href: '/card-discovery', label: 'Card Discovery' },
-        { href: '/active-bidding', label: 'Active Bidding' },
-        { href: '/my-cards', label: 'My Cards' },
-        { href: '/watchlist', label: 'Watchlist' },
         { href: '/psa', label: 'PSA Tools' },
+        { href: '/active-bidding', label: 'Snipes & Bids' },
         { href: '/analytics', label: 'Analytics' },
+        { href: '/watchlist', label: 'Watchlist' },
+        { href: '/deal-analyzer', label: 'Deal Analyzer' },
+        { href: '/va-management', label: 'VA Management' },
+        { href: '/settings', label: 'Settings' },
       ]
     : [
         { href: '/#features', label: 'Features' },

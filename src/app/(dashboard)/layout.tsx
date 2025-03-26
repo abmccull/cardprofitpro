@@ -10,35 +10,33 @@ import {
   Eye, 
   BarChart4,
   Users,
-  Settings
+  Settings,
+  Star,
+  Calculator,
+  PlusCircle,
+  LucideIcon
 } from "lucide-react";
-import { MobileNav } from "@/components/dashboard/mobile-nav";
+import { MobileNav } from "../../../components/dashboard/mobile-nav";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
-// Define the mapping for icons
-const iconMap = {
-  LayoutDashboard,
-  CreditCard,
-  Search,
-  Award,
-  Eye,
-  BarChart4,
-  Users,
-  Settings
+type NavItem = {
+  name: string;
+  href: string;
+  icon: LucideIcon;
 };
 
-// IconName type should match the keys of iconMap
-type IconName = keyof typeof iconMap;
-
-// Create a strongly typed navigation array
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", iconName: "LayoutDashboard" as IconName },
-  { name: "Cards", href: "/my-cards", iconName: "CreditCard" as IconName },
-  { name: "Card Discovery", href: "/card-discovery", iconName: "Search" as IconName },
-  { name: "Submissions", href: "/psa", iconName: "Award" as IconName },
-  { name: "Snipes & Bids", href: "/active-bidding", iconName: "Eye" as IconName },
-  { name: "Analytics", href: "/analytics", iconName: "BarChart4" as IconName },
-  { name: "VA Management", href: "/va-management", iconName: "Users" as IconName },
-  { name: "Settings", href: "/settings", iconName: "Settings" as IconName },
+const navigation: NavItem[] = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Cards", href: "/my-cards", icon: CreditCard },
+  { name: "Card Discovery", href: "/card-discovery", icon: Search },
+  { name: "PSA Tools", href: "/psa", icon: Award },
+  { name: "Snipes & Bids", href: "/active-bidding", icon: Eye },
+  { name: "Analytics", href: "/analytics", icon: BarChart4 },
+  { name: "Watchlist", href: "/watchlist", icon: Star },
+  { name: "Deal Analyzer", href: "/deal-analyzer", icon: Calculator },
+  { name: "VA Management", href: "/va-management", icon: Users },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export default function DashboardLayout({
@@ -47,49 +45,65 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-white sticky top-0 z-50">
-        <div className="mx-auto max-w-[1400px] px-6">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center flex-1">
-              <div className="flex-shrink-0">
-                <Link href="/dashboard" className="text-xl font-bold text-primary">
-                  CardProfit Pro
-                </Link>
-              </div>
-              <div className="hidden md:ml-10 md:flex md:space-x-4 overflow-x-auto flex-1 justify-center">
-                {navigation.map((item) => {
-                  const IconComponent = iconMap[item.iconName];
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-gray-50 rounded-md whitespace-nowrap"
-                    >
-                      {IconComponent && <IconComponent className="mr-1.5 h-4 w-4" />}
-                      {item.name}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="flex items-center gap-6 ml-4">
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar */}
+      <aside className="w-[240px] bg-white border-r border-border flex flex-col">
+        <div className="h-16 px-4 border-b border-border flex items-center">
+          <Link href="/dashboard" className="text-xl font-bold text-primary truncate">
+            CardProfit Pro
+          </Link>
+        </div>
+        <div className="flex-1 flex flex-col">
+          <div className="p-4">
+            <Button
+              asChild
+              className="w-full justify-start gap-2"
+            >
+              <Link href="/my-cards/new">
+                <PlusCircle className="h-4 w-4 shrink-0" />
+                <span>Add New Card</span>
+              </Link>
+            </Button>
+          </div>
+          <nav className="flex-1 overflow-y-auto py-4">
+            {navigation.slice(0, -1).map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="flex items-center px-4 py-2 text-sm text-muted-foreground hover:bg-gray-50 hover:text-foreground"
+              >
+                <item.icon className="h-4 w-4 shrink-0" />
+                <span className="ml-3 truncate">{item.name}</span>
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </aside>
+
+      <div className="flex-1 flex flex-col">
+        {/* Top navbar */}
+        <nav className="h-16 border-b border-border bg-white sticky top-0 z-50">
+          <div className="h-full px-6 flex items-center justify-end gap-6">
+            <Link
+              href="/settings"
+              className="p-2 text-muted-foreground hover:text-foreground rounded-md"
+            >
+              <Settings className="h-5 w-5" />
+            </Link>
+            <UserButton afterSignOutUrl="/" />
+            <div className="md:hidden">
               <MobileNav navigation={navigation} />
-              <div className="flex items-center">
-                <UserButton afterSignOutUrl="/" />
-              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Main content */}
-      <main className="flex-1">
-        <div className="mx-auto max-w-[1400px] px-6 py-8">
-          {children}
-        </div>
-      </main>
+        {/* Main content */}
+        <main className="flex-1">
+          <div className="mx-auto max-w-[1400px] px-6 py-8">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 } 

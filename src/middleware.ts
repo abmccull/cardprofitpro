@@ -3,19 +3,27 @@ import { NextResponse } from 'next/server';
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
 // Create a matcher for protected routes
-const protectedRoutes = createRouteMatcher([
-  '/(dashboard)(.*)',
-  '/my-cards',
-  '/card-discovery',
-  '/analytics',
-  '/settings'
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard/(.*)',
+  '/my-cards/(.*)',
+  '/active-bidding/(.*)',
+  '/psa/(.*)',
+  '/analytics/(.*)',
+  '/card-discovery/(.*)',
+  '/watchlist/(.*)',
+  '/va-management/(.*)',
+  '/deal-analyzer/(.*)',
+  '/card-lifecycle/(.*)',
+  '/transactions/(.*)',
+  '/settings/(.*)',
+  '/profile/(.*)'
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
   const res = NextResponse.next();
 
   // Skip Supabase sync for public routes
-  if (!protectedRoutes(req)) {
+  if (!isProtectedRoute(req)) {
     return res;
   }
 

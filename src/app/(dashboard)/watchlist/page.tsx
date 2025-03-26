@@ -1,12 +1,11 @@
 import { auth } from '@clerk/nextjs/server';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { Database } from '@/lib/supabase/types';
 import { WatchlistItems } from './components/watchlist-items';
+import { createClient } from '@/lib/supabase/client';
 
 export default async function WatchlistPage() {
   const { userId } = await auth();
-  const supabase = createServerComponentClient<Database>({ cookies });
+  const supabase = createClient();
 
   const { data: watchlistItems } = await supabase
     .from('watchlist')

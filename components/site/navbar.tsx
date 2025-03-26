@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
+import { Button } from '../ui/button';
 
 export function Navbar() {
   const { isSignedIn } = useAuth();
@@ -13,12 +13,15 @@ export function Navbar() {
   const dashboardLinks = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/card-discovery', label: 'Card Discovery' },
-    { href: '/active-bidding', label: 'Active Bidding' },
-    { href: '/my-cards', label: 'My Cards' },
+    { href: '/active-bidding', label: 'Snipes & Bids' },
+    { href: '/my-cards', label: 'Cards' },
     { href: '/watchlist', label: 'Watchlist' },
     { href: '/psa', label: 'PSA Tools' },
     { href: '/analytics', label: 'Analytics' },
     { href: '/va-management', label: 'VA Management' },
+    { href: '/deal-analyzer', label: 'Deal Analyzer' },
+    { href: '/card-lifecycle', label: 'Card Lifecycle' },
+    { href: '/transactions', label: 'Transactions' },
   ];
 
   const publicLinks = [
@@ -35,11 +38,11 @@ export function Navbar() {
   };
 
   return (
-    <nav className="border-b bg-white">
+    <nav className="border-b bg-white shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold">
+            <Link href="/" className="text-xl font-bold text-primary">
               CardProfit Pro
             </Link>
             

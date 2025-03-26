@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { analyzeImage, detectCardText, detectCardQuality } from '@/lib/vision/client';
+import { createClient } from '@/lib/supabase/client';
 
 export async function POST(
   request: Request,
   { params }: { params: { cardId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = cookies();
+    const supabase = createClient();
 
     // Get user session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();

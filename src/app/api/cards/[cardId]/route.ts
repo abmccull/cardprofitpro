@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
+import { createClient } from '@/lib/supabase/client';
 
 const updateCardSchema = z.object({
   name: z.string().min(1, 'Name is required').optional(),
@@ -19,7 +19,8 @@ export async function PATCH(
   { params }: { params: { cardId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = cookies();
+    const supabase = createClient();
 
     // Get user session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -113,7 +114,8 @@ export async function DELETE(
   { params }: { params: { cardId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = cookies();
+    const supabase = createClient();
 
     // Get user session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
