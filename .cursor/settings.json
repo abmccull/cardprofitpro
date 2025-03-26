@@ -1,0 +1,43 @@
+{
+  "typescript": {
+    "preferences": {
+      "importModuleSpecifierPreference": "shortest",
+      "importModuleSpecifierEnding": "minimal"
+    }
+  },
+  "editor": {
+    "formatOnSave": true,
+    "defaultFormatter": "prettier",
+    "tabSize": 2,
+    "rulers": [100]
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "tabWidth": 2,
+    "printWidth": 100
+  },
+  "terminal": {
+    "integrated": {
+      "defaultProfile": {
+        "osx": "zsh"
+      }
+    }
+  },
+  "search": {
+    "exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.next": true
+    }
+  },
+  "files": {
+    "exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.next": true,
+      "**/coverage": true
+    }
+  }
+} 
