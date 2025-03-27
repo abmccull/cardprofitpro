@@ -1,14 +1,77 @@
-export type SportType = 'Soccer' | 'Football' | 'Basketball' | 'Baseball' | 'Hockey' | 'Pokemon' | 'WNBA';
+export const SportType = {
+  Baseball: 'Baseball',
+  Basketball: 'Basketball',
+  Football: 'Football',
+  Hockey: 'Hockey',
+  Pokemon: 'Pokemon',
+  WNBA: 'WNBA',
+} as const;
+
+export type SportType = typeof SportType[keyof typeof SportType];
+
+export const CardStatus = {
+  Purchased: 'Purchased',
+  Watchlist: 'Watchlist',
+  'Sent for Grading': 'Sent for Grading',
+  Listed: 'Listed',
+  Sold: 'Sold',
+} as const;
+
+export type CardStatus = typeof CardStatus[keyof typeof CardStatus];
+
+export const GradingCompany = {
+  PSA: 'PSA',
+  BGS: 'BGS',
+  SGC: 'SGC',
+  HGA: 'HGA',
+  CSG: 'CSG',
+} as const;
+
+export type GradingCompany = typeof GradingCompany[keyof typeof GradingCompany];
+
+export const CardGrade = {
+  '1': '1',
+  '1.5': '1.5',
+  '2': '2',
+  '2.5': '2.5',
+  '3': '3',
+  '3.5': '3.5',
+  '4': '4',
+  '4.5': '4.5',
+  '5': '5',
+  '5.5': '5.5',
+  '6': '6',
+  '6.5': '6.5',
+  '7': '7',
+  '7.5': '7.5',
+  '8': '8',
+  '8.5': '8.5',
+  '9': '9',
+  '9.5': '9.5',
+  '10': '10',
+} as const;
+
+export type CardGrade = typeof CardGrade[keyof typeof CardGrade];
+
 export type BuyingFormat = 'Auction' | 'Buy_It_Now' | 'Accepts_Offers';
 export type LocationType = 'North_America' | 'US' | 'Worldwide';
 export type UserRole = 'user' | 'admin' | 'va';
-export type CardStatus = 'Purchased' | 'Watchlist' | 'Sent for Grading' | 'Sold' | 'Listed';
 export type TaskStatus = 'pending' | 'in_progress' | 'completed';
 export type DataSource = 'ebay' | 'psa' | 'other';
 export type SnipeStatus = 'active' | 'processing' | 'completed' | 'error' | 'cancelled';
 export type PSAOrderStatus = 'Order Received' | 'Processing' | 'Shipped' | 'Completed';
-export type GradingCompany = 'PSA' | 'BGS' | 'SGC' | 'HGA' | 'CSG';
-export type CardGrade = '1' | '1.5' | '2' | '2.5' | '3' | '3.5' | '4' | '4.5' | '5' | '5.5' | '6' | '6.5' | '7' | '7.5' | '8' | '8.5' | '9' | '9.5' | '10';
+
+export const PurchaseSource = {
+  Ebay: 'Ebay',
+  Facebook: 'Facebook',
+  'In-person': 'In-person',
+  'Tik-Tok': 'Tik-Tok',
+  Whatnot: 'Whatnot',
+  Instagram: 'Instagram',
+  Other: 'Other',
+} as const;
+
+export type PurchaseSource = typeof PurchaseSource[keyof typeof PurchaseSource];
 
 export interface Database {
   public: {
@@ -79,6 +142,7 @@ export interface Database {
         Row: {
           id: string;
           name: string;
+          player: string | null;
           year: number | null;
           manufacturer: string | null;
           grade: CardGrade | null;
@@ -97,6 +161,7 @@ export interface Database {
           fees: number | null;
           sales_price: number | null;
           purchase_link: string | null;
+          source: PurchaseSource | null;
         };
         Insert: Omit<Database['public']['Tables']['cards']['Row'], 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Database['public']['Tables']['cards']['Row']>;

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
 import { createClientSideClient } from '@/lib/supabase/client-side';
+import { PurchaseSource } from "@/lib/supabase/types";
 
 interface FormData {
   name: string;
@@ -25,7 +26,7 @@ interface FormData {
   grade: string;
   purchaseDate: string;
   purchasePrice: string;
-  source: string;
+  source: PurchaseSource | '';
   targetPrice: string;
   watchlistNotes: string;
 }
@@ -48,6 +49,7 @@ interface CardData {
   target_price?: number;
   watchlist_notes?: string;
   is_sold: boolean;
+  source?: PurchaseSource;
 }
 
 export default function AddCardPage() {
@@ -204,6 +206,7 @@ export default function AddCardPage() {
         cardData.grade = formData.grade;
         cardData.is_graded = formData.grade !== "Ungraded";
         cardData.purchase_price = parseFloat(formData.purchasePrice) || 0;
+        cardData.source = formData.source || undefined;
         if (cardData.is_graded) {
           cardData.status = "graded";
         }
@@ -386,17 +389,35 @@ export default function AddCardPage() {
                       <SelectTrigger id="grade">
                         <SelectValue placeholder="Select grade" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-[200px] overflow-y-auto">
                         <SelectItem value="Ungraded">Ungraded</SelectItem>
                         <SelectItem value="PSA 10">PSA 10</SelectItem>
+                        <SelectItem value="PSA 9.5">PSA 9.5</SelectItem>
                         <SelectItem value="PSA 9">PSA 9</SelectItem>
+                        <SelectItem value="PSA 8.5">PSA 8.5</SelectItem>
                         <SelectItem value="PSA 8">PSA 8</SelectItem>
+                        <SelectItem value="PSA 7.5">PSA 7.5</SelectItem>
                         <SelectItem value="PSA 7">PSA 7</SelectItem>
-                        <SelectItem value="BGS 10">BGS 10</SelectItem>
-                        <SelectItem value="BGS 9.5">BGS 9.5</SelectItem>
-                        <SelectItem value="BGS 9">BGS 9</SelectItem>
-                        <SelectItem value="SGC 10">SGC 10</SelectItem>
+                        <SelectItem value="PSA 6">PSA 6</SelectItem>
+                        <SelectItem value="PSA 5">PSA 5</SelectItem>
+                        <SelectItem value="PSA 4">PSA 4</SelectItem>
+                        <SelectItem value="PSA 3">PSA 3</SelectItem>
+                        <SelectItem value="PSA 2">PSA 2</SelectItem>
+                        <SelectItem value="PSA 1">PSA 1</SelectItem>
+                        <SelectItem value="BGS 10">BGS 10 (Pristine)</SelectItem>
+                        <SelectItem value="BGS 9.5">BGS 9.5 (Gem Mint)</SelectItem>
+                        <SelectItem value="BGS 9">BGS 9 (Mint)</SelectItem>
+                        <SelectItem value="BGS 8.5">BGS 8.5</SelectItem>
+                        <SelectItem value="BGS 8">BGS 8</SelectItem>
+                        <SelectItem value="BGS 7.5">BGS 7.5</SelectItem>
+                        <SelectItem value="BGS 7">BGS 7</SelectItem>
+                        <SelectItem value="SGC 10">SGC 10 (Pristine)</SelectItem>
+                        <SelectItem value="SGC 9.5">SGC 9.5</SelectItem>
                         <SelectItem value="SGC 9">SGC 9</SelectItem>
+                        <SelectItem value="SGC 8.5">SGC 8.5</SelectItem>
+                        <SelectItem value="SGC 8">SGC 8</SelectItem>
+                        <SelectItem value="SGC 7.5">SGC 7.5</SelectItem>
+                        <SelectItem value="SGC 7">SGC 7</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -408,13 +429,12 @@ export default function AddCardPage() {
                       name="purchaseDate" 
                       type="date" 
                       value={formData.purchaseDate} 
-                      onChange={handleChange} 
-                      required
+                      onChange={handleChange}
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="purchasePrice">Purchase Price ($)</Label>
+                    <Label htmlFor="purchasePrice">Purchase Price</Label>
                     <Input 
                       id="purchasePrice" 
                       name="purchasePrice" 
@@ -422,32 +442,27 @@ export default function AddCardPage() {
                       step="0.01" 
                       value={formData.purchasePrice} 
                       onChange={handleChange} 
-                      required
-                      placeholder="e.g. 25.99"
+                      placeholder="0.00"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <Label htmlFor="source">Source/Where Purchased</Label>
-                    <Input 
-                      id="source" 
-                      name="source" 
+                    <Label htmlFor="source">Source</Label>
+                    <Select 
                       value={formData.source} 
-                      onChange={handleChange} 
-                      placeholder="e.g. eBay, card show, local shop"
-                    />
-                  </div>
-                  
-                  <div className="col-span-2 space-y-2">
-                    <Label htmlFor="notes">Notes</Label>
-                    <Textarea 
-                      id="notes" 
-                      name="notes" 
-                      value={formData.notes} 
-                      onChange={handleChange} 
-                      placeholder="Additional notes about this card"
-                      className="min-h-20"
-                    />
+                      onValueChange={(value) => handleSelectChange("source", value as PurchaseSource)}
+                    >
+                      <SelectTrigger id="source">
+                        <SelectValue placeholder="Select source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(PurchaseSource).map((source) => (
+                          <SelectItem key={source} value={source}>
+                            {source}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

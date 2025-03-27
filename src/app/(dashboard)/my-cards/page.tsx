@@ -7,8 +7,9 @@ import { useUser } from '@clerk/nextjs';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Grid, List, Search, ArrowUpDown, ArrowUp, ArrowDown, ImageIcon, ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
-import type { Database, CardGrade, GradingCompany } from '@/lib/supabase/types';
+import { AlertCircle, Grid, List, Search, ArrowUpDown, ArrowUp, ArrowDown, ImageIcon, ChevronDown, ChevronUp, ChevronsUpDown, Check, X, Pencil } from 'lucide-react';
+import { Database } from '@/lib/supabase/types';
+import { SportType, CardStatus, GradingCompany, CardGrade, PurchaseSource } from '@/lib/supabase/types';
 import {
   Select,
   SelectContent,
@@ -26,6 +27,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Image from 'next/image';
+import { GradeFilter } from '@/components/cards/grade-filter';
+import { ColumnVisibility, type Column } from '@/components/cards/column-visibility';
+import { cn } from '@/lib/utils';
+import { createClientSideClient } from "@/lib/supabase/client-side";
+import { toast } from "@/components/ui/use-toast";
 
 type CardItem = Database['public']['Tables']['cards']['Row'];
 type ViewMode = 'grid' | 'table';
@@ -35,12 +41,38 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 };
 
+type ColumnKey =
+  | 'image_url'
+  | 'name'
+  | 'player'
+  | 'sport'
+  | 'status'
+  | 'grading_company'
+  | 'grade'
+  | 'purchase_price'
+  | 'fees'
+  | 'sales_price'
+  | 'net_profit'
+  | 'roi'
+  | 'source'
+  | 'purchase_link';
+
+interface TableColumn {
+  key: ColumnKey;
+  label: string;
+  sortable?: boolean;
+}
+
 const GRADE_OPTIONS: CardGrade[] = [
   '1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5', '5.5',
   '6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5', '10'
 ];
 
 const GRADING_COMPANIES: GradingCompany[] = ['PSA', 'BGS', 'SGC', 'HGA', 'CSG'];
+
+interface EditingCard extends CardItem {
+  isEditing?: boolean;
+}
 
 export default function MyCardsPage() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -50,17 +82,58 @@ export default function MyCardsPage() {
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [filters, setFilters] = useState({
-    search: '',
-    sport: 'all',
-    status: 'all',
-    grade: 'all',
-    gradingCompany: 'all'
+  const [filters, setFilters] = useState<{
+    search: string;
+    sport: string;
+    selectedGrades: CardGrade[];
+    status: string;
+    gradingCompany: string;
+  }>({
+    search: "",
+    sport: "all",
+    selectedGrades: [],
+    status: "all",
+    gradingCompany: "all",
   });
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     column: null,
     direction: 'asc'
   });
+  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>([
+    'image_url',
+    'name',
+    'player',
+    'sport',
+    'status',
+    'grading_company',
+    'grade',
+    'purchase_price',
+    'fees',
+    'sales_price',
+    'net_profit',
+    'roi',
+    'source',
+    'purchase_link'
+  ]);
+  const [editingCards, setEditingCards] = useState<{ [key: string]: EditingCard }>({});
+  const supabase = createClientSideClient();
+
+  const columns: TableColumn[] = [
+    { key: 'image_url', label: 'Image', sortable: false },
+    { key: 'name', label: 'Name', sortable: true },
+    { key: 'player', label: 'Player', sortable: true },
+    { key: 'sport', label: 'Sport', sortable: true },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'grading_company', label: 'Grading Co.', sortable: true },
+    { key: 'grade', label: 'Grade', sortable: true },
+    { key: 'purchase_price', label: 'Purchase Price', sortable: true },
+    { key: 'fees', label: 'Fees', sortable: true },
+    { key: 'sales_price', label: 'Sales Price', sortable: true },
+    { key: 'net_profit', label: 'Net Profit', sortable: true },
+    { key: 'roi', label: 'ROI', sortable: true },
+    { key: 'source', label: 'Source', sortable: true },
+    { key: 'purchase_link', label: 'Purchase Link', sortable: false }
+  ];
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -219,8 +292,14 @@ export default function MyCardsPage() {
     }
   };
 
-  const handleFilterChange = (key: keyof typeof filters, value: string) => {
-    const newFilters = { ...filters, [key]: value };
+  const handleFilterChange = (
+    key: keyof typeof filters,
+    value: string | CardGrade[]
+  ) => {
+    const newFilters = {
+      ...filters,
+      [key]: value
+    };
     setFilters(newFilters);
     applyFilters(cards, newFilters);
   };
@@ -243,8 +322,10 @@ export default function MyCardsPage() {
       filtered = filtered.filter(card => card.status === currentFilters.status);
     }
 
-    if (currentFilters.grade && currentFilters.grade !== 'all') {
-      filtered = filtered.filter(card => card.grade === currentFilters.grade);
+    if (currentFilters.selectedGrades.length > 0) {
+      filtered = filtered.filter(card => 
+        card.grade && currentFilters.selectedGrades.includes(card.grade)
+      );
     }
 
     if (currentFilters.gradingCompany && currentFilters.gradingCompany !== 'all') {
@@ -329,6 +410,218 @@ export default function MyCardsPage() {
     }
   }, [cards]);
 
+  const startEditing = (card: CardItem) => {
+    setEditingCards(prev => ({
+      ...prev,
+      [card.id]: { ...card, isEditing: true }
+    }));
+  };
+
+  const cancelEditing = (cardId: string) => {
+    setEditingCards(prev => {
+      const newState = { ...prev };
+      delete newState[cardId];
+      return newState;
+    });
+  };
+
+  const handleEditChange = (cardId: string, field: keyof CardItem, value: any) => {
+    setEditingCards(prev => ({
+      ...prev,
+      [cardId]: {
+        ...prev[cardId],
+        [field]: value
+      }
+    }));
+  };
+
+  const saveChanges = async (cardId: string) => {
+    try {
+      const editedCard = editingCards[cardId];
+      if (!editedCard) return;
+
+      const { error } = await supabase
+        .from('cards')
+        .update({
+          name: editedCard.name,
+          sport: editedCard.sport,
+          status: editedCard.status,
+          grading_company: editedCard.grading_company,
+          grade: editedCard.grade,
+          purchase_price: editedCard.purchase_price,
+          fees: editedCard.fees,
+          sales_price: editedCard.sales_price,
+          source: editedCard.source,
+          purchase_link: editedCard.purchase_link
+        })
+        .eq('id', cardId);
+
+      if (error) throw error;
+
+      // Update the cards state with the edited values
+      setCards(prev => prev.map(card => 
+        card.id === cardId ? { ...card, ...editedCard } : card
+      ));
+
+      // Clear editing state
+      cancelEditing(cardId);
+
+      toast({
+        title: "Success",
+        description: "Card updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating card:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update card",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const renderEditableCell = (card: CardItem, key: ColumnKey) => {
+    const editingCard = editingCards[card.id];
+    if (!editingCard?.isEditing) {
+      return (
+        <div className="flex items-center justify-between gap-2">
+          {renderCellContent(card, key)}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100"
+            onClick={() => startEditing(card)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    }
+
+    switch (key) {
+      case 'name':
+        return (
+          <Input
+            value={editingCard.name}
+            onChange={(e) => handleEditChange(card.id, 'name', e.target.value)}
+            className="h-8"
+          />
+        );
+      case 'sport':
+        return (
+          <Select
+            value={editingCard.sport || ''}
+            onValueChange={(value) => handleEditChange(card.id, 'sport', value)}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(SportType).map((sport) => (
+                <SelectItem key={sport} value={sport}>
+                  {sport}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case 'status':
+        return (
+          <Select
+            value={editingCard.status || ''}
+            onValueChange={(value) => handleEditChange(card.id, 'status', value)}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(CardStatus).map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case 'grading_company':
+        return (
+          <Select
+            value={editingCard.grading_company || ''}
+            onValueChange={(value) => handleEditChange(card.id, 'grading_company', value)}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(GradingCompany).map((company) => (
+                <SelectItem key={company} value={company}>
+                  {company}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case 'grade':
+        return (
+          <Select
+            value={editingCard.grade || ''}
+            onValueChange={(value) => handleEditChange(card.id, 'grade', value)}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(CardGrade).map((grade) => (
+                <SelectItem key={grade} value={grade}>
+                  {grade}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case 'purchase_price':
+      case 'fees':
+      case 'sales_price':
+        return (
+          <Input
+            type="number"
+            step="0.01"
+            value={editingCard[key] || ''}
+            onChange={(e) => handleEditChange(card.id, key, parseFloat(e.target.value) || null)}
+            className="h-8"
+          />
+        );
+      case 'source':
+        return (
+          <Select
+            value={editingCard.source || ''}
+            onValueChange={(value) => handleEditChange(card.id, 'source', value)}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(PurchaseSource).map((source) => (
+                <SelectItem key={source} value={source}>
+                  {source}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case 'purchase_link':
+        return (
+          <Input
+            value={editingCard.purchase_link || ''}
+            onChange={(e) => handleEditChange(card.id, 'purchase_link', e.target.value)}
+            className="h-8"
+          />
+        );
+      default:
+        return renderCellContent(card, key);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
@@ -384,57 +677,63 @@ export default function MyCardsPage() {
   }
 
   const renderFilters = () => (
-    <div className="flex flex-wrap gap-4 mb-6">
-      <div className="flex-1 min-w-[200px]">
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search cards..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="w-full pl-8"
-          />
-        </div>
+    <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="relative">
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search cards..."
+          value={filters.search}
+          onChange={(e) => handleFilterChange('search', e.target.value)}
+          className="pl-8"
+        />
       </div>
+
       <Select
         value={filters.sport}
         onValueChange={(value) => handleFilterChange('sport', value)}
       >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Sport" />
+        <SelectTrigger>
+          <SelectValue placeholder="Select sport" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Sports</SelectItem>
-          <SelectItem value="Baseball">Baseball</SelectItem>
-          <SelectItem value="Basketball">Basketball</SelectItem>
-          <SelectItem value="Football">Football</SelectItem>
-          <SelectItem value="Hockey">Hockey</SelectItem>
-          <SelectItem value="Pokemon">Pokemon</SelectItem>
-          <SelectItem value="WNBA">WNBA</SelectItem>
+          {Object.values(SportType).map((sport) => (
+            <SelectItem key={sport} value={sport}>
+              {sport}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
+
+      <GradeFilter
+        selectedGrades={filters.selectedGrades}
+        onGradesChange={(grades) => handleFilterChange('selectedGrades', grades)}
+        grades={GRADE_OPTIONS}
+      />
+
       <Select
         value={filters.status}
         onValueChange={(value) => handleFilterChange('status', value)}
       >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Status" />
+        <SelectTrigger>
+          <SelectValue placeholder="Select status" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Status</SelectItem>
-          <SelectItem value="Purchased">Purchased</SelectItem>
-          <SelectItem value="Watchlist">Watchlist</SelectItem>
-          <SelectItem value="Sent for Grading">Sent for Grading</SelectItem>
-          <SelectItem value="Listed">Listed</SelectItem>
-          <SelectItem value="Sold">Sold</SelectItem>
+          <SelectItem value="all">All Statuses</SelectItem>
+          {Object.values(CardStatus).map((status) => (
+            <SelectItem key={status} value={status}>
+              {status}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
+
       <Select
         value={filters.gradingCompany}
         onValueChange={(value) => handleFilterChange('gradingCompany', value)}
       >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Grading Company" />
+        <SelectTrigger>
+          <SelectValue placeholder="Select grading company" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Companies</SelectItem>
@@ -445,185 +744,164 @@ export default function MyCardsPage() {
           ))}
         </SelectContent>
       </Select>
-      <Select
-        value={filters.grade}
-        onValueChange={(value) => handleFilterChange('grade', value)}
-      >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Grade" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Grades</SelectItem>
-          {GRADE_OPTIONS.map((grade) => (
-            <SelectItem key={grade} value={grade}>
-              {grade}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
     </div>
   );
 
   const renderTableView = () => (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px]">Image</TableHead>
-            <TableHead 
-              className="min-w-[200px] cursor-pointer hover:bg-muted/50"
-              onClick={() => handleSort('name')}
-            >
-              <div className="flex items-center">
-                Name
-                <SortIndicator column="name" />
-              </div>
-            </TableHead>
-            <TableHead 
-              className="min-w-[120px] cursor-pointer hover:bg-muted/50"
-              onClick={() => handleSort('sport')}
-            >
-              <div className="flex items-center">
-                Sport
-                <SortIndicator column="sport" />
-              </div>
-            </TableHead>
-            <TableHead 
-              className="min-w-[120px] cursor-pointer hover:bg-muted/50"
-              onClick={() => handleSort('status')}
-            >
-              <div className="flex items-center">
-                Status
-                <SortIndicator column="status" />
-              </div>
-            </TableHead>
-            <TableHead 
-              className="min-w-[120px] cursor-pointer hover:bg-muted/50"
-              onClick={() => handleSort('grading_company')}
-            >
-              <div className="flex items-center whitespace-nowrap">
-                Grading Co.
-                <SortIndicator column="grading_company" />
-              </div>
-            </TableHead>
-            <TableHead 
-              className="min-w-[100px] cursor-pointer hover:bg-muted/50"
-              onClick={() => handleSort('grade')}
-            >
-              <div className="flex items-center">
-                Grade
-                <SortIndicator column="grade" />
-              </div>
-            </TableHead>
-            <TableHead 
-              className="min-w-[120px] cursor-pointer hover:bg-muted/50 text-right"
-              onClick={() => handleSort('purchase_price')}
-            >
-              <div className="flex items-center justify-end">
-                Purchase Price
-                <SortIndicator column="purchase_price" />
-              </div>
-            </TableHead>
-            <TableHead 
-              className="min-w-[100px] cursor-pointer hover:bg-muted/50 text-right"
-              onClick={() => handleSort('fees')}
-            >
-              <div className="flex items-center justify-end">
-                Fees
-                <SortIndicator column="fees" />
-              </div>
-            </TableHead>
-            <TableHead 
-              className="min-w-[120px] cursor-pointer hover:bg-muted/50 text-right"
-              onClick={() => handleSort('sales_price')}
-            >
-              <div className="flex items-center justify-end">
-                Sales Price
-                <SortIndicator column="sales_price" />
-              </div>
-            </TableHead>
-            <TableHead className="min-w-[120px] text-right">Net Profit</TableHead>
-            <TableHead className="min-w-[100px] text-right">ROI</TableHead>
-            <TableHead className="min-w-[100px] text-center">Purchase Link</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredCards.map((card) => (
-            <TableRow key={card.id}>
-              <TableCell className="w-[100px]">
-                {card.image_url ? (
-                  <Image
-                    src={card.image_url}
-                    alt={card.name}
-                    width={50}
-                    height={70}
-                    className="rounded-sm object-cover"
-                  />
-                ) : (
-                  <div className="w-[50px] h-[70px] bg-muted rounded-sm flex items-center justify-center">
-                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                )}
-              </TableCell>
-              <TableCell className="min-w-[200px] font-medium">{card.name}</TableCell>
-              <TableCell className="min-w-[120px]">{card.sport}</TableCell>
-              <TableCell className="min-w-[120px]">{card.status}</TableCell>
-              <TableCell className="min-w-[120px]">{card.grading_company || 'N/A'}</TableCell>
-              <TableCell className="min-w-[100px]">{card.grade || 'N/A'}</TableCell>
-              <TableCell className="min-w-[120px] text-right">
-                {card.purchase_price ? `$${card.purchase_price.toFixed(2)}` : 'N/A'}
-              </TableCell>
-              <TableCell className="min-w-[100px] text-right">
-                {card.fees ? `$${card.fees.toFixed(2)}` : '$0.00'}
-              </TableCell>
-              <TableCell className="min-w-[120px] text-right">
-                {card.sales_price ? `$${card.sales_price.toFixed(2)}` : 'N/A'}
-              </TableCell>
-              <TableCell className="min-w-[120px] text-right">
-                {card.sales_price && card.purchase_price ? (
-                  <span className={
-                    (card.sales_price - card.purchase_price - (card.fees || 0)) >= 0 
-                      ? 'text-green-600' 
-                      : 'text-red-600'
-                  }>
-                    ${(card.sales_price - card.purchase_price - (card.fees || 0)).toFixed(2)}
-                  </span>
-                ) : 'N/A'}
-              </TableCell>
-              <TableCell className="min-w-[100px] text-right">
-                {card.sales_price && card.purchase_price ? (
-                  <span className={
-                    (card.sales_price - card.purchase_price - (card.fees || 0)) >= 0 
-                      ? 'text-green-600' 
-                      : 'text-red-600'
-                  }>
-                    {(((card.sales_price - card.purchase_price - (card.fees || 0)) / card.purchase_price) * 100).toFixed(2)}%
-                  </span>
-                ) : 'N/A'}
-              </TableCell>
-              <TableCell className="min-w-[100px] text-center">
-                {card.purchase_link ? (
-                  <a 
-                    href={card.purchase_link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-700 underline"
+    <div className="rounded-md border overflow-hidden">
+      <div className="flex justify-end p-2 bg-white sticky top-0 z-10">
+        <ColumnVisibility
+          columns={columns}
+          visibleColumns={visibleColumns}
+          onVisibilityChange={(newColumns) => setVisibleColumns(newColumns as ColumnKey[])}
+          onOrderChange={(newOrder) => setVisibleColumns(newOrder as ColumnKey[])}
+        />
+      </div>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {visibleColumns.map((columnKey) => {
+                const column = columns.find(col => col.key === columnKey);
+                if (!column) return null;
+
+                const commonClasses = cn(
+                  "whitespace-nowrap",
+                  column.key === 'name' && "min-w-[200px]",
+                  column.key === 'image_url' && "min-w-[80px]",
+                  column.key !== 'image_url' && "cursor-pointer hover:bg-muted/50",
+                  ['purchase_price', 'fees', 'sales_price', 'net_profit', 'roi'].includes(column.key) && "text-right min-w-[100px]",
+                  column.key === 'purchase_link' && "text-center min-w-[100px]"
+                );
+
+                return (
+                  <TableHead
+                    key={column.key}
+                    className={commonClasses}
+                    onClick={() => column.sortable ? handleSort(column.key as keyof CardItem) : undefined}
                   >
-                    View
-                  </a>
-                ) : 'N/A'}
-              </TableCell>
+                    <div className={cn(
+                      "flex items-center",
+                      ['purchase_price', 'fees', 'sales_price', 'net_profit', 'roi'].includes(column.key) && "justify-end",
+                      column.key === 'purchase_link' && "justify-center"
+                    )}>
+                      {column.label}
+                      {column.sortable && <SortIndicator column={column.key as keyof CardItem} />}
+                    </div>
+                  </TableHead>
+                );
+              })}
+              <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filteredCards.map((card) => (
+              <TableRow key={card.id} className="group">
+                {visibleColumns.map((columnKey) => {
+                  const column = columns.find(col => col.key === columnKey);
+                  if (!column) return null;
+
+                  return (
+                    <TableCell key={column.key} className="p-2">
+                      {renderEditableCell(card, column.key)}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="p-2">
+                  {editingCards[card.id]?.isEditing ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => saveChanges(card.id)}
+                      >
+                        <Check className="h-4 w-4 text-green-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => cancelEditing(card.id)}
+                      >
+                        <X className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  ) : null}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+
+  const renderGridView = () => (
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {filteredCards.map((card) => (
+        <Card key={card.id} className="flex flex-col h-full">
+          <div className="relative pt-[56.25%] overflow-hidden">
+            {card.image_url ? (
+              <Image
+                src={card.image_url}
+                alt={card.name}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-muted flex items-center justify-center">
+                <ImageIcon className="h-12 w-12 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          <CardHeader>
+            <CardTitle className="text-lg line-clamp-2">{card.name}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Sport:</dt>
+                <dd>{card.sport}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Status:</dt>
+                <dd>{card.status}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Grade:</dt>
+                <dd>{card.grade || 'N/A'}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Purchase Price:</dt>
+                <dd>{card.purchase_price != null ? `$${card.purchase_price.toFixed(2)}` : 'N/A'}</dd>
+              </div>
+              {card.sales_price && card.purchase_price != null && (
+                <>
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">Sales Price:</dt>
+                    <dd>${card.sales_price.toFixed(2)}</dd>
+                  </div>
+                  <div className="flex justify-between font-medium">
+                    <dt className="text-muted-foreground">Profit:</dt>
+                    <dd className={card.sales_price - card.purchase_price - (card.fees || 0) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      ${(card.sales_price - card.purchase_price - (card.fees || 0)).toFixed(2)}
+                    </dd>
+                  </div>
+                </>
+              )}
+            </dl>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">My Cards</h1>
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">My Cards</h1>
         <div className="flex gap-4">
           <div className="flex items-center border rounded-lg p-1">
             <Button
@@ -649,7 +927,17 @@ export default function MyCardsPage() {
 
       {renderFilters()}
 
-      {filteredCards.length === 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center items-center min-h-[200px]">
+          <LoadingSpinner />
+        </div>
+      ) : error ? (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : filteredCards.length === 0 ? (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No cards found</AlertTitle>
@@ -671,45 +959,76 @@ export default function MyCardsPage() {
       ) : viewMode === 'table' ? (
         renderTableView()
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredCards.map((card) => (
-            <Card key={card.id}>
-              {card.image_url && (
-                <div className="aspect-video relative overflow-hidden">
-                  <img
-                    src={card.image_url}
-                    alt={card.name}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-              )}
-              <CardHeader>
-                <CardTitle className="text-lg">{card.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  {card.grade && <p>Grade: {card.grade}</p>}
-                  {card.sport && <p>Sport: {card.sport}</p>}
-                  {card.status && <p>Status: {card.status}</p>}
-                  {card.purchase_price && <p>Purchase Price: ${card.purchase_price.toFixed(2)}</p>}
-                  {card.fees && <p>Fees: ${card.fees.toFixed(2)}</p>}
-                  {card.sales_price && <p>Sales Price: ${card.sales_price.toFixed(2)}</p>}
-                  {card.sales_price && card.purchase_price && (
-                    <>
-                      <p>
-                        Net Profit: ${(card.sales_price - card.purchase_price - (card.fees || 0)).toFixed(2)}
-                      </p>
-                      <p className={card.sales_price >= card.purchase_price ? 'text-green-600' : 'text-red-600'}>
-                        ROI: {(((card.sales_price - card.purchase_price - (card.fees || 0)) / card.purchase_price) * 100).toFixed(2)}%
-                      </p>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        renderGridView()
       )}
     </div>
   );
-} 
+}
+
+const renderCellContent = (card: CardItem, key: ColumnKey) => {
+  switch (key) {
+    case 'image_url':
+      return card.image_url ? (
+        <Image
+          src={card.image_url}
+          alt={card.name}
+          width={50}
+          height={70}
+          className="rounded-sm object-cover"
+        />
+      ) : (
+        <div className="w-[50px] h-[70px] bg-muted rounded-sm flex items-center justify-center">
+          <ImageIcon className="h-6 w-6 text-muted-foreground" />
+        </div>
+      );
+    case 'name':
+      return card.name;
+    case 'player':
+      return card.player;
+    case 'sport':
+      return card.sport;
+    case 'status':
+      return card.status;
+    case 'grading_company':
+      return card.grading_company || 'N/A';
+    case 'grade':
+      return card.grade || 'N/A';
+    case 'purchase_price':
+      return card.purchase_price != null ? `$${card.purchase_price.toFixed(2)}` : 'N/A';
+    case 'fees':
+      return card.fees ? `$${card.fees.toFixed(2)}` : '$0.00';
+    case 'sales_price':
+      return card.sales_price ? `$${card.sales_price.toFixed(2)}` : 'N/A';
+    case 'net_profit':
+      if (!card.sales_price || card.purchase_price == null) return 'N/A';
+      const profit = card.sales_price - card.purchase_price - (card.fees || 0);
+      return (
+        <span className={profit >= 0 ? 'text-green-600' : 'text-red-600'}>
+          ${profit.toFixed(2)}
+        </span>
+      );
+    case 'roi':
+      if (!card.sales_price || card.purchase_price == null) return 'N/A';
+      const roi = ((card.sales_price - card.purchase_price - (card.fees || 0)) / card.purchase_price) * 100;
+      return (
+        <span className={roi >= 0 ? 'text-green-600' : 'text-red-600'}>
+          {roi.toFixed(2)}%
+        </span>
+      );
+    case 'source':
+      return card.source || 'N/A';
+    case 'purchase_link':
+      return card.purchase_link ? (
+        <a 
+          href={card.purchase_link} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-blue-500 hover:text-blue-700 underline"
+        >
+          View
+        </a>
+      ) : 'N/A';
+    default:
+      return null;
+  }
+}; 
