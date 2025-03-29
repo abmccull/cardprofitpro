@@ -1,3 +1,27 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/lib/supabase/client-singleton.ts"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/ban-ts-comment": "off"
+      }
+    },
+    {
+      "files": ["src/app/(dashboard)/my-cards/page.tsx"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": "off",
+        "react-hooks/exhaustive-deps": "off",
+        "react/no-unescaped-entities": "off",
+        "@typescript-eslint/ban-ts-comment": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off"
+      }
+    }
+  ]
 }

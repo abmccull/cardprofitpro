@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@clerk/nextjs';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Grid, List, Search, ArrowUpDown, ArrowUp, ArrowDown, ImageIcon, ChevronDown, ChevronUp, ChevronsUpDown, Check, X, Pencil } from 'lucide-react';
+import { AlertCircle, Grid, List, Search, ChevronDown, ChevronUp, ChevronsUpDown, Check, X, Pencil, ImageIcon } from 'lucide-react';
 import { Database } from '@/lib/supabase/types';
 import { SportType, CardStatus, GradingCompany, CardGrade, PurchaseSource } from '@/lib/supabase/types';
 import {
@@ -28,10 +27,11 @@ import {
 } from "@/components/ui/table";
 import Image from 'next/image';
 import { GradeFilter } from '@/components/cards/grade-filter';
-import { ColumnVisibility, type Column } from '@/components/cards/column-visibility';
+import { ColumnVisibility } from '@/components/cards/column-visibility';
 import { cn } from '@/lib/utils';
-import { createClientSideClient } from "@/lib/supabase/client-side";
 import { toast } from "@/components/ui/use-toast";
+import { useAuth } from '@/contexts/auth-context';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 type CardItem = Database['public']['Tables']['cards']['Row'];
 type ViewMode = 'grid' | 'table';
@@ -75,12 +75,12 @@ interface EditingCard extends CardItem {
 }
 
 export default function MyCardsPage() {
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { isSignedIn } = useUser();
   const [cards, setCards] = useState<CardItem[]>([]);
   const [filteredCards, setFilteredCards] = useState<CardItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<unknown>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filters, setFilters] = useState<{
     search: string;
@@ -116,7 +116,7 @@ export default function MyCardsPage() {
     'purchase_link'
   ]);
   const [editingCards, setEditingCards] = useState<{ [key: string]: EditingCard }>({});
-  const supabase = createClientSideClient();
+  const { isSyncedWithDatabase, syncUser, supabaseUserId } = useAuth();
 
   const columns: TableColumn[] = [
     { key: 'image_url', label: 'Image', sortable: false },
@@ -135,92 +135,31 @@ export default function MyCardsPage() {
     { key: 'purchase_link', label: 'Purchase Link', sortable: false }
   ];
 
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      loadCards();
-    }
-  }, [isLoaded, isSignedIn]);
-
-  const syncUser = async () => {
-    try {
-      console.log("🔄 Starting user sync");
-      
-      if (!user?.id) {
-        throw new Error("No authenticated user");
-      }
-      
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action: 'sync'
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-      
-      let rawResponseText;
-      try {
-        rawResponseText = await response.text();
-      } catch (e) {
-        console.error("Failed to get response text:", e);
-        throw new Error("Failed to read API response");
-      }
-      
-      let userData;
-      try {
-        userData = JSON.parse(rawResponseText);
-      } catch (e) {
-        console.error("Failed to parse response as JSON:", e);
-        throw new Error("Invalid JSON response from API");
-      }
-      
-      console.log("✅ User sync successful:", userData);
-      return userData.user;
-    } catch (error) {
-      console.error('❌ Error in syncUser:', error);
-      throw error;
-    }
-  };
-
-  const loadCards = async () => {
+  const loadCards = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       
       console.log('Starting card loading process');
 
-      // First sync the user to get the correct Supabase UUID
-      const syncResponse = await fetch('/api/users/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ clerkId: user?.id })
-      });
-
-      if (!syncResponse.ok) {
-        throw new Error('Failed to sync user account');
+      // Make sure user is synced first
+      if (!isSyncedWithDatabase) {
+        const syncSuccess = await syncUser();
+        if (!syncSuccess) {
+          throw new Error('Failed to sync user account');
+        }
       }
-
-      const syncData = await syncResponse.json();
-      const supabaseUserId = syncData.data?.id;
 
       if (!supabaseUserId) {
-        throw new Error('Failed to get Supabase user ID');
+        throw new Error('User ID is not available');
       }
 
-      console.log('Got Supabase user ID:', supabaseUserId);
-
-      // Get Clerk token for Supabase
+      // Import the singleton client
+      const { createClient } = await import('@/lib/supabase/client-singleton');
+      
+      // Get the token for authentication
       const tokenResponse = await fetch('/api/auth/token');
       if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text();
-        console.error('Token response error:', errorText);
         throw new Error(`Failed to get authentication token: ${tokenResponse.status}`);
       }
       
@@ -229,18 +168,19 @@ export default function MyCardsPage() {
         throw new Error('Authentication token is missing');
       }
 
-      console.log('Got auth token, setting up Supabase client');
-      
       // Initialize Supabase client with auth headers
-      const supabase = createClientComponentClient<Database>({
-        options: {
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+      const supabase = createClient({
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
         }
       });
+
+      // Add null check
+      if (!supabase) {
+        throw new Error('Failed to initialize Supabase client');
+      }
 
       // Fetch cards with the correct Supabase UUID
       const { data: cardsData, error: cardsError } = await supabase
@@ -249,10 +189,9 @@ export default function MyCardsPage() {
         .eq('owner_id', supabaseUserId);
       
       console.log('Cards query result:', {
-        data: cardsData,
-        error: cardsError,
         count: cardsData?.length || 0,
-        userId: supabaseUserId
+        userId: supabaseUserId,
+        error: cardsError ? cardsError.message : null
       });
       
       if (cardsError) {
@@ -265,32 +204,24 @@ export default function MyCardsPage() {
         return;
       }
       
-      if (!cardsData || cardsData.length === 0) {
-        console.log('No cards found for user:', supabaseUserId);
-        
-        // Try a raw query to see all cards
-        const { data: allCards, error: allCardsError } = await supabase
-          .from('cards')
-          .select('owner_id, id');
-        
-        console.log('All cards:', {
-          cards: allCards,
-          error: allCardsError,
-          requestedUserId: supabaseUserId
-        });
-      }
-      
       setCards(cardsData || []);
       setFilteredCards(cardsData || []);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Unexpected error:', err);
-      setError(err?.message || 'An unexpected error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(errorMessage);
       setDebugInfo(err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isSyncedWithDatabase, supabaseUserId, syncUser]);
+
+  useEffect(() => {
+    if (isSignedIn) {
+      loadCards();
+    }
+  }, [isSignedIn, isSyncedWithDatabase, loadCards]);
 
   const handleFilterChange = (
     key: keyof typeof filters,
@@ -304,7 +235,7 @@ export default function MyCardsPage() {
     applyFilters(cards, newFilters);
   };
 
-  const applyFilters = (cards: CardItem[], currentFilters = filters) => {
+  const applyFilters = useCallback((cards: CardItem[], currentFilters = filters) => {
     let filtered = [...cards];
 
     if (currentFilters.search) {
@@ -334,7 +265,7 @@ export default function MyCardsPage() {
 
     filtered = sortData(filtered, sortConfig);
     setFilteredCards(filtered);
-  };
+  }, [filters, sortConfig]);
 
   // Add sorting function
   const sortData = (data: CardItem[], config: SortConfig) => {
@@ -408,7 +339,7 @@ export default function MyCardsPage() {
     if (cards.length > 0) {
       applyFilters(cards);
     }
-  }, [cards]);
+  }, [cards, applyFilters]);
 
   const startEditing = (card: CardItem) => {
     setEditingCards(prev => ({
@@ -425,7 +356,7 @@ export default function MyCardsPage() {
     });
   };
 
-  const handleEditChange = (cardId: string, field: keyof CardItem, value: any) => {
+  const handleEditChange = (cardId: string, field: keyof CardItem, value: unknown) => {
     setEditingCards(prev => ({
       ...prev,
       [cardId]: {
@@ -439,186 +370,119 @@ export default function MyCardsPage() {
     try {
       const editedCard = editingCards[cardId];
       if (!editedCard) return;
+      
+      // Clone the card and remove the isEditing flag
+      const { isEditing: _isEditing, ...cardUpdate } = editedCard;
+
+      // Import the singleton client
+      const { createClient } = await import('@/lib/supabase/client-singleton');
+      
+      // Get the token for authentication
+      const tokenResponse = await fetch('/api/auth/token');
+      if (!tokenResponse.ok) {
+        throw new Error(`Failed to get authentication token: ${tokenResponse.status}`);
+      }
+      
+      const { token } = await tokenResponse.json();
+      if (!token) {
+        throw new Error('Authentication token is missing');
+      }
+
+      // Initialize Supabase client with auth headers
+      const supabase = createClient({
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      });
+
+      // Add null check
+      if (!supabase) {
+        throw new Error('Failed to initialize Supabase client');
+      }
 
       const { error } = await supabase
         .from('cards')
-        .update({
-          name: editedCard.name,
-          sport: editedCard.sport,
-          status: editedCard.status,
-          grading_company: editedCard.grading_company,
-          grade: editedCard.grade,
-          purchase_price: editedCard.purchase_price,
-          fees: editedCard.fees,
-          sales_price: editedCard.sales_price,
-          source: editedCard.source,
-          purchase_link: editedCard.purchase_link
-        })
+        .update(cardUpdate)
         .eq('id', cardId);
-
-      if (error) throw error;
-
-      // Update the cards state with the edited values
-      setCards(prev => prev.map(card => 
-        card.id === cardId ? { ...card, ...editedCard } : card
-      ));
-
-      // Clear editing state
-      cancelEditing(cardId);
-
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: `Failed to save changes: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       toast({
         title: "Success",
         description: "Card updated successfully",
       });
-    } catch (error) {
-      console.error('Error updating card:', error);
+      
+      // Update local state
+      const updatedCard = { ...cardUpdate, id: cardId };
+      setCards(prevCards => 
+        prevCards.map(card => card.id === cardId ? updatedCard as CardItem : card)
+      );
+      
+      // Remove from editing state
+      cancelEditing(cardId);
+    } catch (err) {
+      console.error('Error saving changes:', err);
       toast({
         title: "Error",
-        description: "Failed to update card",
+        description: "Failed to save changes. Please try again.",
         variant: "destructive",
       });
     }
   };
 
-  const renderEditableCell = (card: CardItem, key: ColumnKey) => {
-    const editingCard = editingCards[card.id];
-    if (!editingCard?.isEditing) {
-      return (
-        <div className="flex items-center justify-between gap-2">
-          {renderCellContent(card, key)}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100"
-            onClick={() => startEditing(card)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-        </div>
-      );
+  const renderPurchaseLink = (link: string | null) => {
+    if (!link) {
+      return 'N/A';
     }
+    return (
+      <a 
+        href={link} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="text-blue-500 hover:text-blue-700 underline"
+      >
+        View
+      </a>
+    );
+  };
 
-    switch (key) {
-      case 'name':
-        return (
-          <Input
-            value={editingCard.name}
-            onChange={(e) => handleEditChange(card.id, 'name', e.target.value)}
-            className="h-8"
-          />
-        );
-      case 'sport':
-        return (
-          <Select
-            value={editingCard.sport || ''}
-            onValueChange={(value) => handleEditChange(card.id, 'sport', value)}
-          >
-            <SelectTrigger className="h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(SportType).map((sport) => (
-                <SelectItem key={sport} value={sport}>
-                  {sport}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-      case 'status':
-        return (
-          <Select
-            value={editingCard.status || ''}
-            onValueChange={(value) => handleEditChange(card.id, 'status', value)}
-          >
-            <SelectTrigger className="h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(CardStatus).map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-      case 'grading_company':
-        return (
-          <Select
-            value={editingCard.grading_company || ''}
-            onValueChange={(value) => handleEditChange(card.id, 'grading_company', value)}
-          >
-            <SelectTrigger className="h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(GradingCompany).map((company) => (
-                <SelectItem key={company} value={company}>
-                  {company}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-      case 'grade':
-        return (
-          <Select
-            value={editingCard.grade || ''}
-            onValueChange={(value) => handleEditChange(card.id, 'grade', value)}
-          >
-            <SelectTrigger className="h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(CardGrade).map((grade) => (
-                <SelectItem key={grade} value={grade}>
-                  {grade}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-      case 'purchase_price':
-      case 'fees':
-      case 'sales_price':
-        return (
-          <Input
-            type="number"
-            step="0.01"
-            value={editingCard[key] || ''}
-            onChange={(e) => handleEditChange(card.id, key, parseFloat(e.target.value) || null)}
-            className="h-8"
-          />
-        );
-      case 'source':
-        return (
-          <Select
-            value={editingCard.source || ''}
-            onValueChange={(value) => handleEditChange(card.id, 'source', value)}
-          >
-            <SelectTrigger className="h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(PurchaseSource).map((source) => (
-                <SelectItem key={source} value={source}>
-                  {source}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
+  // Add a renderCellContent function to handle different column types
+  const renderCellContent = (card: CardItem, columnKey: ColumnKey): React.ReactNode => {
+    const value = card[columnKey as keyof CardItem];
+    
+    switch (columnKey) {
       case 'purchase_link':
-        return (
-          <Input
-            value={editingCard.purchase_link || ''}
-            onChange={(e) => handleEditChange(card.id, 'purchase_link', e.target.value)}
-            className="h-8"
-          />
-        );
+        return renderPurchaseLink(card.purchase_link);
+      case 'purchase_price':
+      case 'sales_price':
+      case 'fees':
+        return value != null ? `$${Number(value).toFixed(2)}` : 'N/A';
+      case 'net_profit':
+        if (card.sales_price != null && card.purchase_price != null) {
+          const profit = card.sales_price - card.purchase_price - (card.fees || 0);
+          return `$${profit.toFixed(2)}`;
+        }
+        return 'N/A';
+      case 'roi':
+        if (card.sales_price != null && card.purchase_price != null && card.purchase_price > 0) {
+          const profit = card.sales_price - card.purchase_price - (card.fees || 0);
+          const roi = (profit / card.purchase_price) * 100;
+          return `${roi.toFixed(2)}%`;
+        }
+        return 'N/A';
+      case 'image_url':
+        return value ? 'Image' : 'No Image';
       default:
-        return renderCellContent(card, key);
+        return value?.toString() || 'N/A';
     }
   };
 
@@ -648,13 +512,15 @@ export default function MyCardsPage() {
           </Button>
         </div>
         
-        {debugInfo && (
+        {!!debugInfo && (
           <Card className="overflow-auto max-h-96">
             <CardHeader>
               <CardTitle>Debug Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="text-xs">{JSON.stringify(debugInfo, null, 2)}</pre>
+              <pre className="text-xs">{typeof debugInfo === 'string' 
+                ? debugInfo 
+                : JSON.stringify(debugInfo, null, 2)}</pre>
             </CardContent>
           </Card>
         )}
@@ -803,7 +669,7 @@ export default function MyCardsPage() {
 
                   return (
                     <TableCell key={column.key} className="p-2">
-                      {renderEditableCell(card, column.key)}
+                      {renderCellContent(card, columnKey)}
                     </TableCell>
                   );
                 })}
@@ -841,13 +707,13 @@ export default function MyCardsPage() {
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {filteredCards.map((card) => (
         <Card key={card.id} className="flex flex-col h-full">
-          <div className="relative pt-[56.25%] overflow-hidden">
+          <div className="relative pt-[75%] overflow-hidden">
             {card.image_url ? (
               <Image
                 src={card.image_url}
                 alt={card.name}
                 fill
-                className="object-cover"
+                className="object-contain"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
             ) : (
@@ -944,7 +810,7 @@ export default function MyCardsPage() {
           <AlertDescription>
             {cards.length === 0 ? (
               <>
-                You haven't added any cards to your collection yet.
+                You haven&apos;t added any cards to your collection yet.
                 <div className="mt-2">
                   <Button asChild size="sm" variant="outline">
                     <a href="/card-discovery">Discover Cards</a>
@@ -963,72 +829,4 @@ export default function MyCardsPage() {
       )}
     </div>
   );
-}
-
-const renderCellContent = (card: CardItem, key: ColumnKey) => {
-  switch (key) {
-    case 'image_url':
-      return card.image_url ? (
-        <Image
-          src={card.image_url}
-          alt={card.name}
-          width={50}
-          height={70}
-          className="rounded-sm object-cover"
-        />
-      ) : (
-        <div className="w-[50px] h-[70px] bg-muted rounded-sm flex items-center justify-center">
-          <ImageIcon className="h-6 w-6 text-muted-foreground" />
-        </div>
-      );
-    case 'name':
-      return card.name;
-    case 'player':
-      return card.player;
-    case 'sport':
-      return card.sport;
-    case 'status':
-      return card.status;
-    case 'grading_company':
-      return card.grading_company || 'N/A';
-    case 'grade':
-      return card.grade || 'N/A';
-    case 'purchase_price':
-      return card.purchase_price != null ? `$${card.purchase_price.toFixed(2)}` : 'N/A';
-    case 'fees':
-      return card.fees ? `$${card.fees.toFixed(2)}` : '$0.00';
-    case 'sales_price':
-      return card.sales_price ? `$${card.sales_price.toFixed(2)}` : 'N/A';
-    case 'net_profit':
-      if (!card.sales_price || card.purchase_price == null) return 'N/A';
-      const profit = card.sales_price - card.purchase_price - (card.fees || 0);
-      return (
-        <span className={profit >= 0 ? 'text-green-600' : 'text-red-600'}>
-          ${profit.toFixed(2)}
-        </span>
-      );
-    case 'roi':
-      if (!card.sales_price || card.purchase_price == null) return 'N/A';
-      const roi = ((card.sales_price - card.purchase_price - (card.fees || 0)) / card.purchase_price) * 100;
-      return (
-        <span className={roi >= 0 ? 'text-green-600' : 'text-red-600'}>
-          {roi.toFixed(2)}%
-        </span>
-      );
-    case 'source':
-      return card.source || 'N/A';
-    case 'purchase_link':
-      return card.purchase_link ? (
-        <a 
-          href={card.purchase_link} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-blue-500 hover:text-blue-700 underline"
-        >
-          View
-        </a>
-      ) : 'N/A';
-    default:
-      return null;
-  }
-}; 
+} 

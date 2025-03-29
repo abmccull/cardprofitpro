@@ -28,13 +28,13 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
-              <div className="relative h-96 lg:h-[500px] overflow-hidden rounded-lg shadow-xl">
+              <div className="relative h-96 lg:h-[500px] w-full max-w-[285px] overflow-hidden rounded-lg shadow-xl bg-white">
                 <Image
                   src="/hero-image.jpg" 
                   alt="CardProfit Pro Dashboard"
                   fill
-                  className="object-cover object-center rounded-lg"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-contain object-center"
+                  sizes="(max-width: 768px) 100vw, 285px"
                   priority
                 />
               </div>
