@@ -14,7 +14,7 @@ import {
   DollarSign, Package, Clock, ArrowUp, ArrowDown, 
   AlertTriangle, Download, Filter, BarChart3, PlusCircle,
   GripVertical, SlidersHorizontal, ChevronDown, CheckSquare,
-  Upload, Warehouse
+  Upload, Warehouse, RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -75,6 +75,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Image from 'next/image';
+import { SavedViews } from '@/components/table/saved-views';
+import { useTableConfig, TableColumnVisibility, TableFilterState } from '@/hooks/useTableConfig';
 
 interface CardData {
   id: string;
@@ -311,13 +313,13 @@ function ThumbnailImage({
   const placeholderUrl = '/images/card-placeholder.png'; // Default placeholder
 
   return (
-    <div className="relative h-12 w-12 overflow-hidden rounded-md border bg-muted flex items-center justify-center">
+    <div className="relative h-10 w-10 overflow-hidden rounded-md border bg-muted flex items-center justify-center mx-auto">
       {imageUrl ? (
         <Image
           src={imageUrl}
           alt="Card thumbnail"
           fill
-          sizes="48px"
+          sizes="40px"
           className={`object-cover transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
           onLoad={() => setIsLoading(false)}
           onError={() => {
@@ -326,12 +328,12 @@ function ThumbnailImage({
           }}
         />
       ) : (
-        <div className="text-muted-foreground text-xs">No image</div>
+        <div className="text-muted-foreground text-[0.6rem]">No image</div>
       )}
       
       {isLoading && !error && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted">
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
         </div>
       )}
     </div>
@@ -409,7 +411,15 @@ const inspectSchema = async (supabaseClient: any) => {
 };
 
 // Add the enhanced dashboard component after the EditableCell component
-function TableSummary({ data, onExport }: { data: CardData[], onExport: () => void }) {
+function TableSummary({ 
+  data, 
+  totalCardCount,
+  onExport 
+}: { 
+  data: CardData[], 
+  totalCardCount: number,
+  onExport: () => void 
+}) {
   // Calculate inventory stats
   const soldCards = data.filter(card => 
     card.sale_price || card.sales_date
@@ -538,15 +548,23 @@ function TableSummary({ data, onExport }: { data: CardData[], onExport: () => vo
       <div className="space-y-4">
         {/* Dashboard Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-sports text-sports-blue tracking-tight">Sports Card Inventory Summary</h2>
-      <Button
+          <div>
+            <h2 className="text-3xl font-sports text-sports-blue tracking-tight">Sports Card Inventory Summary</h2>
+            {data.length < totalCardCount && (
+              <div className="text-sm text-sports-blue mt-1 flex items-center">
+                <Info className="h-4 w-4 mr-1" />
+                <span>Displaying summary for {data.length} filtered cards</span>
+              </div>
+            )}
+          </div>
+          <Button
             variant="outline"
             onClick={onExport}
-            className="flex items-center gap-2 border-2 border-foil-silver hover:border-sports-blue"
-      >
-            <Download className="h-4 w-4" />
+            className="flex items-center gap-2 border-2 border-foil-silver hover:border-sports-blue rounded-full shadow-sm hover:shadow-button-hover"
+          >
+            <Download className="h-4 w-4 text-sports-blue" />
             <span className="font-medium">Export CSV</span>
-      </Button>
+          </Button>
         </div>
 
         {/* Key Performance Indicators */}
@@ -961,6 +979,9 @@ function EditableCell({
 }) {
   const [value, setValue] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Identify calculated fields that shouldn't be editable
+  const isCalculatedField = ['days_to_grade', 'days_held', 'profit', 'roi', 'all_in_cost'].includes(column.id);
 
   const onBlur = () => {
     setIsEditing(false);
@@ -999,6 +1020,11 @@ function EditableCell({
         typeof value === 'number') {
       return formatCurrency(value);
     }
+    
+    // For percentage fields
+    if (column.id === 'roi' && typeof value === 'number') {
+      return `${value.toFixed(1)}%`;
+    }
 
     return value;
   };
@@ -1027,7 +1053,8 @@ function EditableCell({
     return '';
   };
 
-  if (isEditing) {
+  // Don't allow editing for calculated fields
+  if (isEditing && !isCalculatedField) {
     switch (column.id) {
       case 'grade':
         return (
@@ -1218,10 +1245,11 @@ function EditableCell({
 
   return (
     <div
-      className={`cursor-pointer hover:bg-accent hover:text-accent-foreground p-1 rounded-sm min-h-[2rem] flex items-center ${getTextColorClass()}`}
-      onClick={() => setIsEditing(true)}
+      className={`${isCalculatedField ? 'cursor-default' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground'} p-1 rounded-sm min-h-[1.75rem] flex items-center justify-center ${getTextColorClass()}`}
+      onClick={() => !isCalculatedField && setIsEditing(true)}
+      title={isCalculatedField ? "Calculated field (not editable)" : "Click to edit"}
     >
-      {getFormattedValue()}
+      <span className="text-sm font-medium">{getFormattedValue()}</span>
     </div>
   );
 }
@@ -1333,14 +1361,16 @@ function TextFilter({
       <div className="flex justify-between pt-2">
       <Button
           variant="outline" 
-          size="sm" 
+          size="sm"
+          className="border-2 border-foil-silver hover:border-sports-blue rounded-full"
           onClick={onClearFilter}
       >
           Clear
       </Button>
       <Button
-          variant="default" 
-          size="sm" 
+          variant="secondary" 
+          size="sm"
+          className="bg-sports-blue hover:bg-sports-blue-hover text-white rounded-full"
           onClick={() => onApplyFilter({
             type: filterType,
             value: filterType === 'isEmpty' ? null : filterValue
@@ -1430,14 +1460,16 @@ function NumberFilter({
       <div className="flex justify-between pt-2">
       <Button
           variant="outline" 
-          size="sm" 
+          size="sm"
+          className="border-2 border-foil-silver hover:border-sports-blue rounded-full"
           onClick={onClearFilter}
       >
           Clear
       </Button>
       <Button
-          variant="default" 
-          size="sm" 
+          variant="secondary" 
+          size="sm"
+          className="bg-sports-blue hover:bg-sports-blue-hover text-white rounded-full"
           onClick={() => {
             if (filterType === 'isEmpty') {
               onApplyFilter({ type: filterType, value: null });
@@ -1513,9 +1545,9 @@ function DateFilter({
           </label>
           <Popover>
             <PopoverTrigger asChild>
-      <Button
+              <Button
                 variant="outline"
-                className="w-full justify-start text-left font-normal h-8"
+                className="w-full justify-start text-left font-normal h-8 border-foil-silver hover:border-sports-blue"
               >
                 {date ? (
                   format(date, "MM/dd/yyyy")
@@ -1523,7 +1555,7 @@ function DateFilter({
                   <span className="text-muted-foreground">Select date</span>
                 )}
                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-      </Button>
+              </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
@@ -1542,9 +1574,9 @@ function DateFilter({
           <label className="text-xs font-medium">End date</label>
           <Popover>
             <PopoverTrigger asChild>
-      <Button
+              <Button
                 variant="outline"
-                className="w-full justify-start text-left font-normal h-8"
+                className="w-full justify-start text-left font-normal h-8 border-foil-silver hover:border-sports-blue"
               >
                 {dateMax ? (
                   format(dateMax, "MM/dd/yyyy")
@@ -1552,7 +1584,7 @@ function DateFilter({
                   <span className="text-muted-foreground">Select date</span>
                 )}
                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-      </Button>
+              </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
@@ -1569,14 +1601,16 @@ function DateFilter({
       <div className="flex justify-between pt-2">
       <Button
           variant="outline" 
-          size="sm" 
+          size="sm"
+          className="border-2 border-foil-silver hover:border-sports-blue rounded-full"
           onClick={onClearFilter}
       >
           Clear
       </Button>
       <Button
-          variant="default" 
-          size="sm" 
+          variant="secondary" 
+          size="sm"
+          className="bg-sports-blue hover:bg-sports-blue-hover text-white rounded-full"
           onClick={() => {
             if (filterType === 'isEmpty') {
               onApplyFilter({ type: filterType, value: null });
@@ -1663,14 +1697,16 @@ function SelectFilter({
       <div className="flex justify-between pt-2">
       <Button
           variant="outline" 
-          size="sm" 
+          size="sm"
+          className="border-2 border-foil-silver hover:border-sports-blue rounded-full"
           onClick={onClearFilter}
       >
           Clear
       </Button>
       <Button
-          variant="default" 
-          size="sm" 
+          variant="secondary" 
+          size="sm"
+          className="bg-sports-blue hover:bg-sports-blue-hover text-white rounded-full"
           onClick={() => {
             if (selectedValues.length === 0) {
               onClearFilter();
@@ -1804,18 +1840,18 @@ function ColumnFilterPopover({
         <Button 
           variant="ghost" 
           size="sm" 
-          className={`h-8 w-8 p-0 relative ${getIconColor()}`}
+          className={`h-6 w-6 p-0 relative ${getIconColor()}`}
         >
-          <SlidersHorizontal className="h-4 w-4" />
+          <SlidersHorizontal className="h-3 w-3" />
           {(currentFilter || isSorted) && (
-            <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center">
-              <span className="animate-none absolute inline-flex h-full w-full rounded-full bg-primary/50 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            <span className="absolute -top-1 -right-1 flex h-2 w-2 items-center justify-center">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-primary/50 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
             </span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[250px] p-0" align="start">
+      <PopoverContent className="w-[220px] p-0" align="start">
         <div className="p-2 border-b">
           <h4 className="font-medium text-sm">
             {typeof column.header === 'string' ? column.header : column.id}
@@ -1824,27 +1860,27 @@ function ColumnFilterPopover({
           <div className="flex mt-2 border rounded-md overflow-hidden">
           <Button
               variant={isSorted && sortDirection === 'asc' ? "default" : "ghost"} 
-            size="sm"
-              className="flex-1 rounded-none h-8" 
+              size="sm"
+              className="flex-1 rounded-none h-7 text-xs" 
               onClick={() => onSort('asc')}
           >
-              <ArrowUp className="h-3.5 w-3.5 mr-1" />
+              <ArrowUp className="h-3 w-3 mr-1" />
               <span className="text-xs">A-Z</span>
           </Button>
           <Button
               variant={isSorted && sortDirection === 'desc' ? "default" : "ghost"} 
-            size="sm"
-              className="flex-1 rounded-none h-8 border-l" 
+              size="sm"
+              className="flex-1 rounded-none h-7 text-xs border-l" 
               onClick={() => onSort('desc')}
           >
-              <ArrowDown className="h-3.5 w-3.5 mr-1" />
+              <ArrowDown className="h-3 w-3 mr-1" />
               <span className="text-xs">Z-A</span>
           </Button>
         </div>
       </div>
         
-        <div className="border-b py-1.5 px-3">
-          <h4 className="text-xs font-medium text-muted-foreground">FILTER OPTIONS</h4>
+        <div className="border-b py-1 px-3">
+          <h4 className="text-[0.7rem] font-medium text-muted-foreground">FILTER OPTIONS</h4>
         </div>
         
         <div>
@@ -1997,36 +2033,64 @@ export default function MyCardsPage() {
   const [cards, setCards] = useState<CardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table'); // Default to table view
-  const [showSummary, setShowSummary] = useState(true);
-  const [dateFilter, setDateFilter] = useState<string>("last30");
-  const [customDateRange, setCustomDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
-    from: undefined,
-    to: undefined
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('card-view-mode');
+      return (saved === 'grid' || saved === 'table') ? saved as ('grid' | 'table') : 'table';
+    }
+    return 'table';
   });
+  const [showSummary, setShowSummary] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('card-show-summary') === 'true';
+    }
+    return true;
+  });
+  
+  // Add state for date picker visibility
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const { toast } = useToast();
-
-  // Add state for table functionality
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
-    Object.fromEntries(columns.map(col => [col.id, true]))
-  );
-  const [sortColumn, setSortColumn] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
-  // Add state for column ordering
-  const [columnOrder, setColumnOrder] = useState<string[]>(columns.map(col => col.id));
+  // Use the table config hook for managing table state
+  const tableConfig = useTableConfig({
+    tableId: 'my-cards-table',
+    defaultColumns: columns.map(col => col.id),
+  });
   
-  // Add state for column filters
-  const [columnFilters, setColumnFilters] = useState<FilterState>({});
+  // Use the values from the hook
+  const {
+    views,
+    currentView,
+    createView,
+    applyView,
+    updateView,
+    deleteView,
+    renameView,
+    resetToDefault,
+    columnVisibility, 
+    setColumnVisibility,
+    columnOrder,
+    setColumnOrder,
+    sortState,
+    setSortState,
+    filterState,
+    setFilterState,
+    searchQuery,
+    setSearchQuery,
+    dateFilter,
+    setDateFilter,
+    customDateRange,
+    setCustomDateRange,
+  } = tableConfig;
+  
+  // Derived state
+  const sortColumn = sortState.column;
+  const sortDirection = sortState.direction;
+  const columnFilters = filterState;
   
   // Add state for unique values in each column (for select filters)
   const [uniqueColumnValues, setUniqueColumnValues] = useState<Record<string, any[]>>({});
-
+  
   // Add sensors for drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -2034,44 +2098,87 @@ export default function MyCardsPage() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-  
-  // Update the handleDragEnd function for column reordering
-  const handleDragEnd = (event: DragEndEvent) => {
+
+  // Sort columns based on the order - ensure this useMemo is in the same order in every render
+  const orderedColumns = useMemo(() => {
+    return columnOrder
+      .map(id => columns.find(col => col.id === id))
+      .filter((col): col is ColumnDef => col !== undefined);
+  }, [columnOrder]);
+
+  // Save view preferences to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('card-view-mode', viewMode);
+      localStorage.setItem('card-show-summary', showSummary.toString());
+    }
+  }, [viewMode, showSummary]);
+
+  // Update the handleDragEnd function for column reordering with proper type annotations
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     
     if (active.id !== over?.id) {
-      setColumnOrder((items) => {
-        const oldIndex = items.findIndex(id => id === active.id);
-        const newIndex = items.findIndex(id => id === over?.id);
-        
-        return arrayMove(items, oldIndex, newIndex);
-      });
+      const oldColumnOrder = [...columnOrder];
+      const oldIndex = oldColumnOrder.findIndex(id => id === active.id);
+      const newIndex = oldColumnOrder.findIndex(id => id === over?.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newColumnOrder = arrayMove(oldColumnOrder, oldIndex, newIndex);
+        setColumnOrder(newColumnOrder);
+      }
     }
-  };
+  }, [columnOrder, setColumnOrder]);
 
-  // Add a function to handle column filtering
-  const handleApplyFilter = (columnId: string, filter: ColumnFilter | null) => {
-    setColumnFilters(prev => ({
-      ...prev,
-      [columnId]: filter
-    }));
-  };
+  // Add a function to handle column filtering with proper type annotations
+  const handleApplyFilter = useCallback((columnId: string, filter: ColumnFilter | null) => {
+    const updatedFilters: TableFilterState = { ...filterState };
+    if (filter) {
+      updatedFilters[columnId] = filter;
+    } else {
+      delete updatedFilters[columnId];
+    }
+    setFilterState(updatedFilters);
+  }, [filterState, setFilterState]);
   
-  // Add a function to clear a specific column filter
-  const handleClearFilter = (columnId: string) => {
-    setColumnFilters(prev => {
-      const newFilters = { ...prev };
-      delete newFilters[columnId];
-      return newFilters;
-    });
-  };
+  // Add a function to clear a specific column filter with proper type annotations
+  const handleClearFilter = useCallback((columnId: string) => {
+    const updatedFilters: TableFilterState = { ...filterState };
+    delete updatedFilters[columnId];
+    setFilterState(updatedFilters);
+  }, [filterState, setFilterState]);
   
   // Add a function to clear all filters
-  const clearAllFilters = () => {
-    setColumnFilters({});
+  const clearAllFilters = useCallback(() => {
+    console.log("Clearing all filters and search query");
+    setFilterState({});
     setSearchQuery('');
-  };
-  
+  }, [setFilterState, setSearchQuery]);
+
+  // Update the toggleColumnVisibility function to use hook with proper type annotations
+  const toggleColumnVisibility = useCallback((columnId: string) => {
+    const updatedVisibility: TableColumnVisibility = { ...columnVisibility };
+    updatedVisibility[columnId] = !columnVisibility[columnId];
+    setColumnVisibility(updatedVisibility);
+  }, [columnVisibility, setColumnVisibility]);
+
+  // Update the handleSort function to use sortState
+  const handleSort = useCallback((columnId: string, direction?: 'asc' | 'desc') => {
+    if (sortState.column === columnId && !direction) {
+      // Toggle direction if same column and no direction specified
+      setSortState({
+        column: columnId,
+        direction: sortState.direction === 'asc' ? 'desc' : 'asc'
+      });
+    } else {
+      // Set new sort column and use specified direction or default to ascending
+      setSortState({
+        column: columnId,
+        direction: direction || 'asc'
+      });
+    }
+  }, [sortState, setSortState]);
+
   // Extract unique values for select filters
   useEffect(() => {
     if (cards.length > 0) {
@@ -2102,49 +2209,13 @@ export default function MyCardsPage() {
     }
   }, [cards]);
 
-  // Update the handleSort function to accept direction parameter
-  const handleSort = (columnId: string, direction?: 'asc' | 'desc') => {
-    if (sortColumn === columnId && !direction) {
-      // Toggle direction if same column and no direction specified
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-      } else {
-      // Set new sort column and use specified direction or default to ascending
-      setSortColumn(columnId);
-      setSortDirection(direction || 'asc');
-    }
-  };
-
-  // Add a function to handle column visibility
-  const toggleColumnVisibility = (columnId: string) => {
-    setVisibleColumns(prev => ({
-      ...prev,
-      [columnId]: !prev[columnId]
-    }));
-  };
-
-  // Add a function to handle column reordering
-  const moveColumn = (fromIndex: number, toIndex: number) => {
-    setColumnOrder(prevOrder => {
-      const newOrder = [...prevOrder];
-      const [movedItem] = newOrder.splice(fromIndex, 1);
-      newOrder.splice(toIndex, 0, movedItem);
-      return newOrder;
-    });
-  };
-
-  // Sort columns based on the order
-  const orderedColumns = useMemo(() => {
-    return columnOrder
-      .map(id => columns.find(col => col.id === id))
-      .filter((col): col is ColumnDef => col !== undefined);
-  }, [columnOrder]);
-
   // Filter and sort cards based on search query and column filters
   const filteredAndSortedCards = useMemo(() => {
     // First apply search query
     let filtered = cards;
     
-    if (searchQuery.trim()) {
+    if (searchQuery && searchQuery.trim()) {
+      console.log("Filtering by search query:", searchQuery);
       const lowerQuery = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(card => {
         // Search through all text fields
@@ -2356,7 +2427,7 @@ export default function MyCardsPage() {
       if (error) {
         console.error('Error loading cards:', error);
         setError(`Failed to load cards: ${error}`);
-      setLoading(false);
+        setLoading(false);
         return;
       }
       
@@ -2376,7 +2447,7 @@ export default function MyCardsPage() {
       setLoading(false);
     }
   }, [userId]);
-  
+
   // Next update the useEffect to simplify dependencies and be more explicit
   useEffect(() => {
     // Only run this effect when necessary components are available
@@ -2455,7 +2526,7 @@ export default function MyCardsPage() {
 
   return (
     <TooltipProvider>
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="w-full px-4 py-6 space-y-6">
         {/* Header with action buttons */}
         <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-neutral-dark rounded-xl p-4 border-2 border-foil-silver shadow-sm">
           <div className="flex-1">
@@ -2467,11 +2538,11 @@ export default function MyCardsPage() {
           
           <div className="flex items-center gap-3">
             {/* View toggle buttons */}
-            <div className="flex bg-gray-100 dark:bg-gray-800 rounded-md p-1 mr-2">
+            <div className="flex bg-gray-100 dark:bg-gray-800 rounded-full p-1 mr-2 border border-foil-silver">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
-                className={`h-8 ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}`}
+                className={`h-8 ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-sports-blue font-medium' : 'text-neutral-gray hover:text-sports-blue'} rounded-full`}
                 onClick={() => setViewMode('grid')}
               >
                 <LayoutGrid className="h-4 w-4 mr-2" />
@@ -2480,7 +2551,7 @@ export default function MyCardsPage() {
               <Button
                 variant={viewMode === 'table' ? 'default' : 'ghost'}
                 size="sm"
-                className={`h-8 ${viewMode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}`}
+                className={`h-8 ${viewMode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm text-sports-blue font-medium' : 'text-neutral-gray hover:text-sports-blue'} rounded-full`}
                 onClick={() => setViewMode('table')}
               >
                 <Table className="h-4 w-4 mr-2" />
@@ -2492,33 +2563,34 @@ export default function MyCardsPage() {
             <Button
               variant="outline"
               size="sm"
-              className={`flex items-center gap-2 ${showSummary ? 'border-sports-blue text-sports-blue' : ''}`}
+              className={`flex items-center gap-2 border-2 ${showSummary ? 'border-sports-blue text-sports-blue' : 'border-foil-silver hover:border-sports-blue'} rounded-full shadow-sm hover:shadow-button-hover`}
               onClick={() => setShowSummary(!showSummary)}
             >
               <BarChart3 className="h-4 w-4" />
               <span>{showSummary ? 'Hide Summary' : 'Show Summary'}</span>
             </Button>
             
+            {/* Refresh button (circular) */}
             <Button
               variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
+              size="icon"
+              className="h-9 w-9 border-2 border-foil-silver hover:border-sports-blue rounded-full shadow-sm hover:shadow-button-hover flex items-center justify-center"
               onClick={() => loadCards()}
+              title="Refresh"
             >
-              <ArrowUpDown className="h-4 w-4" />
-              <span>Refresh</span>
+              <RefreshCw className="h-4 w-4 text-sports-blue hover:animate-spin transition-all" />
             </Button>
             
             <Button
               asChild
               variant="default"
               size="sm"
-              className="bg-sports-gradient hover:opacity-90"
+              className="bg-sports-gradient hover:opacity-90 rounded-full shadow-button hover:shadow-button-hover"
             >
               <Link href="/my-cards/new">
                 <Plus className="h-4 w-4 mr-1" />
                 <span>Add Card</span>
-        </Link>
+              </Link>
             </Button>
           </div>
       </div>
@@ -2530,7 +2602,10 @@ export default function MyCardsPage() {
             <Input
               placeholder="Search cards..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                console.log("Search query changed:", e.target.value);
+                setSearchQuery(e.target.value);
+              }}
               className="pl-8"
             />
           </div>
@@ -2613,48 +2688,98 @@ export default function MyCardsPage() {
         {/* Summary Component */}
         {showSummary && (
           <TableSummary 
-            data={cards} 
+            data={filteredAndSortedCards} 
+            totalCardCount={cards.length}
             onExport={() => {
+              // Create CSV content from visible/filtered cards
+              const headers = orderedColumns
+                .filter(column => columnVisibility[column.id])
+                .map(column => typeof column.header === 'string' ? column.header : column.id);
+              
+              const rows = filteredAndSortedCards.map(cardData => 
+                orderedColumns
+                  .filter(column => columnVisibility[column.id])
+                  .map(column => {
+                    const value = cardData[column.id as keyof CardData];
+                    if (value === null || value === undefined) return '';
+                    if (typeof value === 'object') return JSON.stringify(value);
+                    return String(value);
+                  })
+              );
+              
+              const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.join(','))
+              ].join('\n');
+              
+              // Create a blob and download link
+              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.setAttribute('href', url);
+              
+              // Save export timestamp in filename and store preferences
+              const timestamp = new Date().toISOString().split('T')[0];
+              link.setAttribute('download', `sports-cards-export-${timestamp}.csv`);
+              
+              // Save current view preferences in localStorage for later exports
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('card-last-export-date', timestamp);
+                localStorage.setItem('card-export-columns', JSON.stringify(
+                  orderedColumns
+                    .filter(column => columnVisibility[column.id])
+                    .map((column: ColumnDef) => column.id)
+                ));
+              }
+              
+              link.style.visibility = 'hidden';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              
               toast({
-                title: "Exporting data...",
-                description: "Your CSV file will download shortly."
+                title: "Export Complete",
+                description: `Exported ${filteredAndSortedCards.length} cards to CSV`,
               });
-              // Implement Export function
             }} 
           />
         )}
         
         {/* Force grid view for now to avoid table issues */}
         {viewMode === 'table' ? (
-          <div className="bg-white dark:bg-neutral-dark rounded-xl p-4 border-2 border-foil-silver shadow-sm overflow-hidden">
-            <div className="space-y-4">
+          <div className="bg-white dark:bg-neutral-dark rounded-xl p-3 border-2 border-foil-silver shadow-sm overflow-hidden">
+            <div className="space-y-3">
               {/* Table controls */}
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-        <Button
+                  <Button
                     variant="outline"
-          size="sm"
-                    className="h-8 px-2 lg:px-3"
+                    size="icon"
+                    className="h-8 w-8 border-2 border-foil-silver hover:border-sports-blue rounded-full shadow-sm hover:shadow-button-hover flex items-center justify-center"
                     onClick={() => {
                       // Reset all filters and column order
-                      setSearchQuery('');
-                      setSortColumn(null);
-                      setSortDirection('asc');
-                      setColumnOrder(columns.map(col => col.id));
-                      setColumnFilters({});
+                      resetToDefault();
+                      toast({
+                        title: "Filters Reset",
+                        description: "All filters and columns have been reset to default."
+                      });
                     }}
+                    title="Reset filters"
                   >
-                    <X className="h-4 w-4 mr-1" />
-                    <span>Reset</span>
-        </Button>
+                    <X className="h-4 w-4 text-sports-blue" />
+                  </Button>
 
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-8">
-                        <Filter className="h-4 w-4 mr-1" />
-                        <span>Columns</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8 border-2 border-foil-silver hover:border-sports-blue rounded-full shadow-sm hover:shadow-button-hover"
+                      >
+                        <Filter className="h-4 w-4 mr-1 text-sports-blue" />
+                        <span className="text-sports-blue">Columns</span>
                         {Object.keys(columnFilters).length > 0 && (
-                          <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[0.625rem] font-medium text-primary-foreground">
+                          <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-sports-blue text-[0.625rem] font-medium text-white">
                             {Object.keys(columnFilters).length}
                           </span>
                         )}
@@ -2681,7 +2806,7 @@ export default function MyCardsPage() {
                                     key={columnId} 
                                     id={columnId} 
                                     column={column} 
-                                    isVisible={visibleColumns[columnId]}
+                                    isVisible={columnVisibility[columnId]}
                                     onToggleVisibility={() => toggleColumnVisibility(columnId)}
                                   />
                                 );
@@ -2692,6 +2817,16 @@ export default function MyCardsPage() {
                       </div>
                     </PopoverContent>
                   </Popover>
+                  
+                  <SavedViews
+                    views={views}
+                    currentView={currentView}
+                    onCreateView={createView}
+                    onApplyView={applyView}
+                    onUpdateView={updateView}
+                    onDeleteView={deleteView}
+                    onRenameView={renameView}
+                  />
                 </div>
               </div>
               
@@ -2737,7 +2872,7 @@ export default function MyCardsPage() {
                           if (Array.isArray(filter.value)) {
                             const hasNull = filter.value.includes('null');
                             const values = filter.value
-                              .filter(v => v !== 'null')
+                              .filter((v: any) => v !== 'null')
                               .join(', ');
                             filterDisplay = hasNull 
                               ? `is ${values || 'empty'}` 
@@ -2757,144 +2892,183 @@ export default function MyCardsPage() {
                       >
                         <span className="font-medium">{columnName}:</span>
                         <span>{filterDisplay}</span>
-        <Button
+                        <Button
                           variant="ghost"
-          size="sm"
-                          className="h-4 w-4 p-0 ml-1"
+                          size="sm"
+                          className="h-4 w-4 p-0 ml-1 hover:text-sports-red"
                           onClick={() => handleClearFilter(columnId)}
-        >
+                        >
                           <X className="h-3 w-3" />
-        </Button>
-      </div>
+                        </Button>
+                      </div>
                     );
                   })}
                   
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="h-6 text-xs"
+                    className="h-6 text-xs border border-foil-silver hover:border-sports-blue hover:text-sports-blue rounded-full"
                     onClick={clearAllFilters}
                   >
                     Clear All
                   </Button>
-        </div>
+                </div>
               )}
 
-              <div className="rounded-md border">
-                <UITable>
-                  <TableHeader>
-                    <TableRow>
-                      {orderedColumns
-                        .filter(column => visibleColumns[column.id])
-                        .map((column) => (
-                          <TableHead 
-                            key={column.id} 
-                            className="whitespace-nowrap font-medium"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="truncate pr-4">
-                                {typeof column.header === 'string' ? column.header : column.id}
-                              </span>
-                              
-                              {/* Filter and sort button */}
-                              <ColumnFilterPopover
-                                column={column}
-                                currentFilter={columnFilters[column.id]}
-                                uniqueValues={uniqueColumnValues[column.id] || []}
-                                onApplyFilter={(filter) => handleApplyFilter(column.id, filter)}
-                                onClearFilter={() => handleClearFilter(column.id)}
-                                isSorted={column.id === sortColumn}
-                                sortDirection={sortDirection}
-                                onSort={(direction) => handleSort(column.id, direction)}
-                              />
-                            </div>
-                          </TableHead>
-                        ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAndSortedCards.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={orderedColumns.filter(col => visibleColumns[col.id]).length} className="h-24 text-center">
-                          No results found.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredAndSortedCards.map((card, index) => (
-                        <TableRow key={card.id || `card-${index}`}>
+              <div className="overflow-x-auto">
+                <div className="min-w-full inline-block align-middle">
+                  <div className="rounded-md border overflow-hidden">
+                    <UITable className="w-full text-sm border-collapse table-fixed">
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 dark:bg-gray-800">
                           {orderedColumns
-                            .filter(column => visibleColumns[column.id])
-                            .map((column) => {
-                              const columnId = column.id as string;
-                              
-                              // Special case for thumbnail column
-                              if (columnId === 'thumbnail') {
-                                return (
-                                  <TableCell key={`${card.id}-${column.id}`}>
-                                    <ThumbnailImage 
-                                      cardId={card.id}
-                                      imageUrl={card.thumbnail_url || card.image_url}
+                            .filter(column => columnVisibility[column.id])
+                            .map((column) => (
+                              <TableHead 
+                                key={column.id} 
+                                className="whitespace-normal text-center p-2 font-medium text-xs"
+                                style={{ 
+                                  height: '65px',
+                                  width: column.id === 'thumbnail' ? '50px' : 
+                                         (column.id === 'name' || column.id === 'player') ? '150px' : 
+                                         (column.id === 'purchase_price' || column.id === 'current_value' || 
+                                         column.id === 'grading_cost' || column.id === 'all_in_cost' || 
+                                         column.id === 'sale_price') ? '90px' :
+                                         (column.id === 'created_at' || column.id === 'sales_date' || 
+                                         column.id === 'date_shipped_to_grade' || column.id === 'date_received_from_grade') ? '80px' :
+                                         (column.id === 'manufacturer' || column.id === 'status') ? '85px' :
+                                         (column.id === 'days_to_grade' || column.id === 'days_held' || 
+                                         column.id === 'year' || column.id === 'sport' || 
+                                         column.id === 'source' || column.id === 'grade') ? '70px' :
+                                         '100px',
+                                  verticalAlign: 'middle'
+                                }}
+                              >
+                                {column.id === 'thumbnail' ? (
+                                  <div className="h-full flex items-center justify-center">
+                                    <span className="text-center text-sports-blue text-[0.8rem] font-medium leading-tight">
+                                      {typeof column.header === 'string' ? column.header : column.id}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col items-center h-full justify-between py-1">
+                                    <ColumnFilterPopover
+                                      column={column}
+                                      currentFilter={columnFilters[column.id]}
+                                      uniqueValues={uniqueColumnValues[column.id] || []}
+                                      onApplyFilter={(filter) => handleApplyFilter(column.id, filter)}
+                                      onClearFilter={() => handleClearFilter(column.id)}
+                                      isSorted={column.id === sortColumn}
+                                      sortDirection={sortDirection}
+                                      onSort={(direction) => handleSort(column.id, direction)}
                                     />
-                                  </TableCell>
-                                );
-                              }
-                              
-                              // Use the EditableCell component for true inline editing
-                              return (
-                                <TableCell key={`${card.id}-${column.id}`}>
-                                  <EditableCell
-                                    value={card[columnId as keyof CardData]}
-                                    row={{ index }}
-                                    column={{ id: columnId }}
-                                    uniqueValues={uniqueColumnValues}
-                                    updateData={async (rowIndex: number, columnId: string, value: any) => {
-                                      try {
-                                        // Create FormData to pass to server action
-                                        const formData = new FormData();
-                                        formData.append('cardId', card.id);
-                                        formData.append('field', columnId);
-                                        formData.append('value', value !== null && value !== undefined ? String(value) : '');
-                                        
-                                        // Update in database using server action
-                                        const result = await updateCardField(formData);
-                                        
-                                        if (result.error) {
-                                          throw new Error(result.error);
-                                        }
-                                        
-                                        // Update local state
-                                        setCards(cards.map((c, i) => 
-                                          i === rowIndex 
-                                            ? { ...c, [columnId]: value }
-                                            : c
-                                        ));
-                                        
-                                        toast({
-                                          description: "Card updated successfully",
-                                        });
-                                      } catch (error) {
-                                        console.error('Error updating card:', error);
-                                        toast({
-                                          variant: "destructive",
-                                          title: "Error updating card",
-                                          description: "The update could not be saved",
-                                        });
-                                      }
-                                    }}
-                                  />
-                                </TableCell>
-                              );
-                            })}
+                                    
+                                    <span className="w-full text-center break-words text-sports-blue text-[0.8rem] font-medium leading-tight flex-1 flex items-center justify-center px-1">
+                                      {typeof column.header === 'string' ? column.header : column.id}
+                                    </span>
+                                  </div>
+                                )}
+                              </TableHead>
+                            ))}
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </UITable>
+                      </TableHeader>
+                      <TableBody className="text-sm">
+                        {filteredAndSortedCards.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={orderedColumns.filter(col => columnVisibility[col.id]).length} className="h-16 text-center">
+                              No results found.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredAndSortedCards.map((card, index) => (
+                            <TableRow 
+                              key={card.id || `card-${index}`} 
+                              className="hover:bg-gray-50 dark:hover:bg-gray-800/50 border-b last:border-b-0"
+                              style={{ minHeight: '50px' }}
+                            >
+                              {orderedColumns
+                                .filter(column => columnVisibility[column.id])
+                                .map((column) => {
+                                  const columnId = column.id as string;
+                                  
+                                  // Special case for thumbnail column
+                                  if (columnId === 'thumbnail') {
+                                    return (
+                                      <TableCell key={`${card.id}-${column.id}`} className="p-2 text-center">
+                                        <ThumbnailImage 
+                                          cardId={card.id}
+                                          imageUrl={card.thumbnail_url || card.image_url}
+                                        />
+                                      </TableCell>
+                                    );
+                                  }
+                                  
+                                  // Use the EditableCell component for true inline editing
+                                  return (
+                                    <TableCell 
+                                      key={`${card.id}-${column.id}`} 
+                                      className="p-2 text-center"
+                                      style={{ 
+                                        maxWidth: (columnId === 'name' || columnId === 'player') ? '150px' : '100px',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
+                                      }}
+                                    >
+                                      <EditableCell
+                                        value={card[columnId as keyof CardData]}
+                                        row={{ index }}
+                                        column={{ id: columnId }}
+                                        uniqueValues={uniqueColumnValues}
+                                        updateData={async (rowIndex: number, columnId: string, value: any) => {
+                                          try {
+                                            // Create FormData to pass to server action
+                                            const formData = new FormData();
+                                            formData.append('cardId', card.id);
+                                            formData.append('field', columnId);
+                                            formData.append('value', value !== null && value !== undefined ? String(value) : '');
+                                            
+                                            // Update in database using server action
+                                            const result = await updateCardField(formData);
+                                            
+                                            if (result.error) {
+                                              throw new Error(result.error);
+                                            }
+                                            
+                                            // Update local state
+                                            setCards(cards.map((c, i) => 
+                                              i === rowIndex 
+                                                ? { ...c, [columnId]: value }
+                                                : c
+                                            ));
+                                            
+                                            toast({
+                                              description: "Card updated successfully",
+                                            });
+                                          } catch (error) {
+                                            console.error('Error updating card:', error);
+                                            toast({
+                                              variant: "destructive",
+                                              title: "Error updating card",
+                                              description: "The update could not be saved",
+                                            });
+                                          }
+                                        }}
+                                      />
+                                    </TableCell>
+                                  );
+                                })}
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </UITable>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {cards.map((card) => (
               <Card key={card.id} className="overflow-hidden border-2 border-foil-silver hover:border-sports-blue hover:shadow-card-hover transition-all duration-200">
                 <div className="p-5 space-y-3">
@@ -2943,9 +3117,9 @@ export default function MyCardsPage() {
                     </div>
                   </div>
                 </div>
-                </Card>
-              ))}
-            </div>
+              </Card>
+            ))}
+          </div>
       )}
     </div>
     </TooltipProvider>
