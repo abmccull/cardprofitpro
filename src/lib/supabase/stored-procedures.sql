@@ -77,4 +77,40 @@ BEGIN
   RETURN QUERY SELECT created_user_id, clerk_id_param, TRUE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-COMMENT ON FUNCTION create_user_if_not_exists(TEXT, TEXT) IS 'Creates a user if one does not already exist with the given clerk_id.'; 
+COMMENT ON FUNCTION create_user_if_not_exists(TEXT, TEXT) IS 'Creates a user if one does not already exist with the given clerk_id.';
+
+-- Function to disable RLS temporarily (for admin operations)
+CREATE OR REPLACE FUNCTION public.disable_rls_for_transaction()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER -- Execute with owner privileges
+AS $$
+BEGIN
+  -- Temporarily disable RLS on the cards table
+  ALTER TABLE public.cards DISABLE ROW LEVEL SECURITY;
+END;
+$$;
+
+-- Function to re-enable RLS (call after operations)
+CREATE OR REPLACE FUNCTION public.enable_rls_for_transaction()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER -- Execute with owner privileges
+AS $$
+BEGIN
+  -- Re-enable RLS on the cards table
+  ALTER TABLE public.cards ENABLE ROW LEVEL SECURITY;
+END;
+$$;
+
+-- Function to match a user ID against the authenticated user
+CREATE OR REPLACE FUNCTION public.match_user_id(clerk_user_id text)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER -- Execute with owner privileges
+AS $$
+BEGIN
+  -- Return true if the passed ID matches the authenticated user
+  RETURN clerk_user_id = current_setting('request.jwt.claim.sub', TRUE);
+END;
+$$; 
