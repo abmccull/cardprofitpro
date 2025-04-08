@@ -158,7 +158,7 @@ export interface Database {
           buying_format: string | null;
           location: string | null;
           is_sold: boolean | null;
-          fees: number | null;
+          selling_fees: number | null;
           sales_price: number | null;
           purchase_link: string | null;
           source: PurchaseSource | null;

@@ -1,89 +1,66 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { NextResponse, type NextRequest } from 'next/server'
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+// Import from @supabase/ssr
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
-// Create a matcher for protected routes
-const isProtectedRoute = createRouteMatcher([
-  '/dashboard/(.*)',
-  '/my-cards/(.*)',
-  '/active-bidding/(.*)',
-  '/psa/(.*)',
-  '/analytics/(.*)',
-  '/card-discovery/(.*)',
-  '/watchlist/(.*)',
-  '/va-management/(.*)',
-  '/deal-analyzer/(.*)',
-  '/card-lifecycle/(.*)',
-  '/transactions/(.*)',
-  '/settings/(.*)',
-  '/profile/(.*)'
-]);
+const isPublicRoute = createRouteMatcher(['/', '/login', '/auth/(.*)', '/api/webhook/(.*)', '/api/auth/(.*)']);
 
-export default clerkMiddleware(async (auth, req) => {
-  const res = NextResponse.next();
-
-  // Skip Supabase sync for public routes
-  if (!isProtectedRoute(req)) {
-    return res;
+export default clerkMiddleware(async (auth, req: NextRequest) => {
+  
+  // Check if the route is public, if so, skip Supabase session handling
+  if (isPublicRoute(req)) {
+    return NextResponse.next();
   }
+  
+  // Prepare response object early to handle cookie setting
+  let response = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  });
 
-  // Get user ID from auth
-  const { userId } = await auth();
-
-  // If the user is not signed in, continue
-  if (!userId) {
-    return res;
-  }
-
-  // Get Supabase client
-  const supabase = createMiddlewareClient({ req, res });
-
-  try {
-    // Check if user exists in Supabase
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('clerk_id', userId)
-      .single();
-
-    if (userError) {
-      // Only create a new user if the error is that the user wasn't found
-      if (userError.code === 'PGRST116') {
-        console.log('User not found in Supabase, creating new user with clerk_id:', userId);
-        const { data: newUser, error: createError } = await supabase
-          .from('users')
-          .insert({
-            clerk_id: userId,
-            email: req.headers.get('x-clerk-email') || '',
-            name: req.headers.get('x-clerk-user-name') || '',
-            role: 'user'
-          })
-          .select('id')
-          .single();
-
-        if (createError) {
-          console.error('Error creating user in middleware:', createError);
-          // Don't throw, just log and continue
-          return res;
-        }
-
-        console.log('Successfully created new user with id:', newUser?.id);
-      } else {
-        console.error('Error looking up user in middleware:', userError);
-        // Don't throw, just log and continue
-        return res;
-      }
-    } else {
-      console.log('Found existing user with clerk_id:', userId);
+  // For protected routes, proceed with Supabase session check/refresh
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // Use the prepared response object to set the cookie
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: CookieOptions) {
+          // Use the prepared response object to delete the cookie
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+        },
+      },
     }
-  } catch (error) {
-    console.error('Error in middleware:', error);
-    // Don't throw, just log and continue
-  }
+  );
 
-  return res;
+  // Attempt to get session to refresh it if needed
+  await supabase.auth.getUser()
+
+  // Return the response object which now potentially has updated cookies
+  return response;
 });
 
+// Define a matcher for the middleware
 export const config = {
-  matcher: ['/((?!.+\\.[\\w]+$|_next).*)', '/', '/(api|trpc)(.*)'],
+  matcher: [
+    // Match all paths except static files and images
+    '/((?!_next/static|_next/image|favicon.ico|images|api/webhook/clerk).*)',
+    // Match all API routes except the clerk webhook
+    '/api/:path*',
+  ],
 }; 

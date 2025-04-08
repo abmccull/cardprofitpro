@@ -1,4 +1,4 @@
-import { EbayAuthToken } from 'ebay-oauth-nodejs-client';
+import ebayOAuth from 'ebay-oauth-nodejs-client';
 import { Cache } from '@/lib/cache';
 import { z } from 'zod';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -8,11 +8,18 @@ const cache = new Cache();
 const CACHE_KEY = 'ebay_access_token';
 const EBAY_API_URL = 'https://api.ebay.com';
 
-const ebayAuthClient = new EbayAuthToken({
-  clientId: process.env.EBAY_CLIENT_ID!,
-  clientSecret: process.env.EBAY_CLIENT_SECRET!,
-  redirectUri: process.env.EBAY_REDIRECT_URI!,
-});
+// Create ebay auth client using factory pattern
+const createEbayAuthClient = () => {
+  // @ts-ignore - Handle both ESM and CJS module formats
+  const EbayAuthToken = ebayOAuth.EbayAuthToken || ebayOAuth.default?.EbayAuthToken || ebayOAuth;
+  return new EbayAuthToken({
+    clientId: process.env.EBAY_CLIENT_ID!,
+    clientSecret: process.env.EBAY_CLIENT_SECRET!,
+    redirectUri: process.env.EBAY_REDIRECT_URI!,
+  });
+};
+
+const ebayAuthClient = createEbayAuthClient();
 
 async function getAccessToken(): Promise<string> {
   const cachedToken = await cache.get(CACHE_KEY);
@@ -119,7 +126,7 @@ export async function searchEbayListings(query: string, filters: SearchFilters =
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
-      'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+      'X-EBAY-C-MARKPLACE-ID': 'EBAY_US',
     },
   });
 
