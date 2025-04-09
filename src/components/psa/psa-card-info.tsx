@@ -1,11 +1,11 @@
 'use client';
 
 import { usePSAData, PSACardData } from '@/hooks/use-psa-data';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui-migrated/card';
+import { Badge } from '@/components/ui-migrated/badge';
+import { Skeleton } from '@/components/ui-migrated/skeleton';
 import { AlertCircle, CheckCircle, Award } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui-migrated/alert';
 
 interface PSACardInfoProps {
   certNumber: string;

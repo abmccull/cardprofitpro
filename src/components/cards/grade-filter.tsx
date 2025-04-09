@@ -1,13 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui-migrated/checkbox';
+import { Button } from '@/components/ui-migrated/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@/components/ui-migrated/popover';
 import { cn } from '@/lib/utils';
 import { ChevronDown } from 'lucide-react';
 import type { CardGrade } from '@/lib/supabase/types';

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui-migrated/button';
+import { Card } from '@/components/ui-migrated/card';
+import { useToast } from '@/components/ui-migrated/use-toast';
 
 interface EbayConnectProps {
   isConnected: boolean;

@@ -10,11 +10,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+} from '@/components/ui-migrated/dialog';
+import { Button } from '@/components/ui-migrated/button';
+import { Input } from '@/components/ui-migrated/input';
+import { Label } from '@/components/ui-migrated/label';
+import { Switch } from '@/components/ui-migrated/switch';
 import { LoadingSpinner } from './loading-spinner';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/supabase/types';

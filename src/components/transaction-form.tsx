@@ -4,18 +4,17 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useToast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { DatePicker } from '@/components/ui/date-picker';
+import { useToast } from '@/components/ui-migrated/use-toast';
+import { Button } from '@/components/ui-migrated/button';
+import { Input } from '@/components/ui-migrated/input';
+import { DatePicker } from '@/components/ui-migrated/date-picker';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui-migrated/select';
 import {
   Form,
   FormControl,
@@ -23,7 +22,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from '@/components/ui-migrated/form';
 
 const transactionSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -49,7 +48,7 @@ export function TransactionForm() {
       platform: 'in_person',
       date: new Date(),
       notes: '',
-    },
+    } as any,
   });
 
   async function onSubmit(data: TransactionFormValues) {
@@ -72,7 +71,7 @@ export function TransactionForm() {
         title: 'Success',
         description: 'Transaction created successfully',
       });
-    } catch (error) {
+    } catch (e) {
       toast({
         title: 'Error',
         description: 'Failed to create transaction',

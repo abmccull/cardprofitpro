@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { PlusCircle, Eye, Award, List, ChevronDown, ChevronUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui-migrated/button';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 

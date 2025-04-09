@@ -1,5 +1,5 @@
 import { getEbayConnectionStatus } from '../actions';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui-migrated/button';
 import Link from 'next/link';
 import { CheckCircle } from 'lucide-react';
 

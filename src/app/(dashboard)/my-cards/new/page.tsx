@@ -3,14 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui-migrated/button";
+import { Input } from "@/components/ui-migrated/input";
+import { Label } from "@/components/ui-migrated/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui-migrated/radio-group";
+import { Textarea } from "@/components/ui-migrated/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui-migrated/select";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui-migrated/card";
+import { toast } from "@/components/ui-migrated/use-toast";
 import { createClientSideClient } from '@/lib/supabase/client-side';
 import type { Database } from "@/lib/supabase/types"; // Import Database type
 import { 
@@ -29,12 +29,12 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "@/components/ui/command";
+} from "@/components/ui-migrated/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui-migrated/popover";
 
 interface FormData {
   name: string;

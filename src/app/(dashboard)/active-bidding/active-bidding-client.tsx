@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui-migrated/card';
+import { Button } from '@/components/ui-migrated/button';
 import type { Database } from '@/lib/supabase/types';
 
 type Snipe = Database['public']['Tables']['snipes']['Row'];

@@ -39,3 +39,6 @@ next-env.d.ts
 # database
 *.sql
 !src/lib/supabase/stored-procedures.sql
+
+# clerk configuration (can include secrets)
+/.clerk/

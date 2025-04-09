@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Card } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/ui/use-toast';
+import { Card } from '@/components/ui-migrated/card';
+import { Skeleton } from '@/components/ui-migrated/skeleton';
+import { useToast } from '@/components/ui-migrated/use-toast';
 import { useAuth } from '@/contexts/auth-context';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { AutocompleteInput } from '@/components/ui/autocomplete-input';
+import { Input } from '@/components/ui-migrated/input';
+import { Button } from '@/components/ui-migrated/button';
+import { AutocompleteInput } from '@/components/ui-migrated/autocomplete-input';
 import { 
   Search, LayoutGrid, Table, Plus, ArrowUpDown, Loader2, 
   Check, X, Info, CalendarIcon, TrendingUp, TrendingDown, 
@@ -23,9 +23,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+} from "@/components/ui-migrated/select";
+import { Calendar } from "@/components/ui-migrated/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui-migrated/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import {
@@ -35,20 +35,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui-migrated/table";
 import { updateCardField, uploadCardImage } from '@/app/actions/cards';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   TooltipProvider
-} from "@/components/ui/tooltip";
+} from "@/components/ui-migrated/tooltip";
 import {
   BarChart, Bar, PieChart, Pie, LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell
 } from 'recharts';
 import { getCardsByUserId } from '@/app/actions/cards';
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/ui-migrated/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +56,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui-migrated/dialog";
 import {
   DndContext,
   closestCenter,
@@ -151,7 +151,7 @@ function CurrencyInput({ value, onChange, onBlur, autoFocus }: {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove currency formatting for editing (remove $ and commas)
-    let rawValue = e.target.value.replace(/[$,]/g, '');
+    const rawValue = e.target.value.replace(/[$,]/g, '');
     
     // Handle empty or decimal point only cases
     if (rawValue === '' || rawValue === '.') {
@@ -1902,73 +1902,46 @@ function ImageUploadCell({
   onImageUploaded: (imageUrl: string, thumbnailUrl: string) => void;
 }) {
   const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const file = e.target.files[0];
     if (!file) return;
-    
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        variant: "destructive",
-        title: "File too large",
-        description: "Image must be less than 5MB"
-      });
-      return;
-    }
-    
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        variant: "destructive",
-        title: "Invalid file type",
-        description: "Only image files are allowed"
-      });
-      return;
-    }
-    
-    setIsUploading(true);
-    setError(null);
-    
+
     try {
+      setIsUploading(true);
+      
+      // Create FormData object
       const formData = new FormData();
-      formData.append('cardId', cardId);
-      formData.append('image', file);
+      formData.append('file', file);
       
-      // Upload the image using the server action
-      const response = await uploadCardImage(formData);
+      // Call the server action with proper arguments
+      const result = await uploadCardImage(cardId, formData);
       
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      // Use the returned URLs
+      onImageUploaded(result.imageUrl, result.thumbnailUrl);
       
-      if (response.imageUrl && response.thumbnailUrl) {
-        onImageUploaded(response.imageUrl, response.thumbnailUrl);
-        
-        toast({
-          title: "Image uploaded",
-          description: "Card image has been updated"
-        });
-      }
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      setError('Failed to upload image. Please try again.');
-      
+      toast({
+        title: "Image uploaded",
+        description: "Card image has been updated successfully."
+      });
+    } catch (err: any) {
+      console.error("Error uploading image:", err);
       toast({
         variant: "destructive",
         title: "Upload failed",
-        description: "Could not upload image. Please try again."
+        description: err?.message || "Failed to upload image. Please try again."
       });
     } finally {
       setIsUploading(false);
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
-  };
-
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
   };
 
   return (
@@ -1988,7 +1961,7 @@ function ImageUploadCell({
               variant="ghost" 
               size="icon" 
               className="opacity-0 group-hover:opacity-100 h-8 w-8" 
-              onClick={triggerFileInput}
+              onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
               <Upload className="h-4 w-4 text-white" />
@@ -2000,7 +1973,7 @@ function ImageUploadCell({
           variant="outline"
           size="sm"
           className="h-16 w-16 flex flex-col gap-1 p-1"
-          onClick={triggerFileInput}
+          onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
         >
           {isUploading ? (
@@ -2022,8 +1995,6 @@ function ImageUploadCell({
         onChange={handleUpload}
         disabled={isUploading}
       />
-      
-      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }
@@ -2296,7 +2267,7 @@ export default function MyCardsPage() {
             return purchaseDate >= startOfLastYear && purchaseDate <= endOfLastYear;
           case 'custom':
             const fromDate = customDateRange.from ? new Date(customDateRange.from) : null;
-            let toDate = customDateRange.to ? new Date(customDateRange.to) : null;
+            const toDate = customDateRange.to ? new Date(customDateRange.to) : null;
             
             if (fromDate) {
               fromDate.setHours(0, 0, 0, 0); // Start of from date
@@ -2422,25 +2393,13 @@ export default function MyCardsPage() {
       setError(null);
       
       // Use server action to fetch cards
-      const { data, error } = await getCardsByUserId(userId);
+      const cardsData = await getCardsByUserId(userId);
       
-      if (error) {
-        console.error('Error loading cards:', error);
-        setError(`Failed to load cards: ${error}`);
-        setLoading(false);
-        return;
-      }
-      
-      if (data) {
-        logDebug(`Loaded ${data.length} cards`);
-        // Update the cards state
-        setCards(data);
-        // Explicitly set loading to false after data is loaded
-        setLoading(false);
-      } else {
-        setCards([]);
-        setLoading(false);
-      }
+      logDebug(`Loaded ${cardsData.length} cards`);
+      // Update the cards state
+      setCards(cardsData);
+      // Explicitly set loading to false after data is loaded
+      setLoading(false);
     } catch (err) {
       console.error('Error in loadCards:', err);
       setError('An unexpected error occurred. Please try again later.');
@@ -3021,18 +2980,8 @@ export default function MyCardsPage() {
                                         uniqueValues={uniqueColumnValues}
                                         updateData={async (rowIndex: number, columnId: string, value: any) => {
                                           try {
-                                            // Create FormData to pass to server action
-                                            const formData = new FormData();
-                                            formData.append('cardId', card.id);
-                                            formData.append('field', columnId);
-                                            formData.append('value', value !== null && value !== undefined ? String(value) : '');
-                                            
                                             // Update in database using server action
-                                            const result = await updateCardField(formData);
-                                            
-                                            if (result.error) {
-                                              throw new Error(result.error);
-                                            }
+                                            await updateCardField(card.id, columnId, value);
                                             
                                             // Update local state
                                             setCards(cards.map((c, i) => 

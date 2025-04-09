@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useAuth as useClerkAuth, useSession } from '@clerk/nextjs';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui-migrated/use-toast';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/types/database.types';
 

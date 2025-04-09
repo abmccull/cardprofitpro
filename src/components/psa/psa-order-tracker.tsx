@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { usePSAOrderTracking } from '@/hooks/use-psa-data';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui-migrated/card';
+import { Button } from '@/components/ui-migrated/button';
+import { Input } from '@/components/ui-migrated/input';
+import { Badge } from '@/components/ui-migrated/badge';
+import { Skeleton } from '@/components/ui-migrated/skeleton';
 import { AlertCircle, Clock, CheckCircle, Package, Truck, ClipboardCheck } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui-migrated/alert';
 
 interface PSAOrderTrackerProps {
   initialOrderNumber?: string;

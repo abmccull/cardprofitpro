@@ -10,13 +10,13 @@ import {
   LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui-migrated/card';
 import { 
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '@/components/ui-migrated/tooltip';
 
 // Icon mapping
 const iconMap = {

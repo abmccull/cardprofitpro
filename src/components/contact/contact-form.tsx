@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui-migrated/input';
+import { Button } from '@/components/ui-migrated/button';
+import { Textarea } from '@/components/ui-migrated/textarea';
 import { toast } from 'sonner';
 
 export function ContactForm() {

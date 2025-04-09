@@ -1,6 +1,283 @@
----
-description: 
-globs: 
-alwaysApply: true
----
- 
+# Card Profit Pro Authentication Integration Guide
+
+## Overview
+
+This document explains the authentication architecture used in Card Profit Pro, which combines Clerk for authentication and Supabase for database operations. This integration follows a specific pattern that must be maintained for all feature development.
+
+## Authentication Architecture
+
+### Clerk + Supabase Native Integration
+
+Card Profit Pro uses a native integration between Clerk and Supabase:
+
+- **Clerk**: Provides user authentication (sign-up, sign-in, sessions)
+- **Supabase**: Provides database services and Row Level Security (RLS)
+
+The integration involves:
+
+1. Using Clerk as the primary authentication provider
+2. Passing Clerk's session token to Supabase for authorization
+3. Using Clerk's middleware for route protection
+4. Using RLS in Supabase for data access control
+
+## Key Components
+
+### 1. Auth Context
+
+The `AuthContext` (`src/contexts/auth-context.tsx`) is the heart of our integration:
+
+```typescript
+// Initialize Supabase client with Clerk session
+useEffect(() => {
+  const initSupabase = async () => {
+    // Make sure Clerk is loaded and user is signed in
+    if (!isLoaded || !isSignedIn || !session) {
+      setSupabase(null);
+      return;
+    }
+
+    try {
+      // Get Supabase connection details
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      // Get a standard token from Clerk
+      const token = await session.getToken();
+      
+      // Create Supabase client for client-side operations
+      const supabaseClient = createClient<Database>(
+        supabaseUrl,
+        supabaseKey,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+          },
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        }
+      );
+
+      setSupabase(supabaseClient);
+    } catch (error) {
+      console.error('Error initializing Supabase client:', error);
+      setSupabase(null);
+    }
+  };
+
+  initSupabase();
+}, [isLoaded, isSignedIn, session, toast]);
+```
+
+This context provides:
+- Authentication state (`isSignedIn`, `userId`)
+- Supabase client with Clerk's token for data operations
+
+### 2. Middleware
+
+The middleware (`src/middleware.ts`) ensures all routes are protected by Clerk:
+
+```typescript
+import { clerkMiddleware } from '@clerk/nextjs/server';
+
+// Handle Supabase and Clerk integration in middleware
+export default clerkMiddleware();
+
+// Define a matcher for the middleware
+export const config = {
+  matcher: [
+    // Match all paths except static files and images
+    '/((?!_next/static|_next/image|favicon.ico|images).*)',
+    // Match all API routes
+    '/api/:path*',
+  ],
+};
+```
+
+This middleware:
+- Protects routes based on the matcher patterns
+- Enables Clerk's auth functions to work in server components
+- Lets you use `auth()` and `currentUser()` in server components and API routes
+
+### 3. Database Security (RLS)
+
+Supabase tables are secured using Row Level Security (RLS). For our specific implementation with eBay integration, we have:
+
+**Tables:**
+- `ebay_tokens`: Stores OAuth tokens for eBay integration
+- `user_sessions`: Stores session state for OAuth flows
+
+**RLS Policies:**
+```sql
+-- Public access policies with user_id filtering
+CREATE POLICY "Public access to eBay tokens" ON public.ebay_tokens
+  FOR ALL TO anon, service_role
+  USING (TRUE)
+  WITH CHECK (TRUE);
+
+CREATE POLICY "Public access to user sessions" ON public.user_sessions
+  FOR ALL TO anon, service_role
+  USING (TRUE)
+  WITH CHECK (TRUE);
+```
+
+These policies allow access through the anon and service_role, while application logic enforces user_id matching. In the future, we'll implement more granular RLS using Clerk's userId.
+
+Example of ideal RLS once fully implemented:
+
+```sql
+-- Example RLS policy for a table
+CREATE POLICY "Users can view their own data" ON public.some_table
+  FOR SELECT USING (user_id = auth.uid());
+
+CREATE POLICY "Users can modify their own data" ON public.some_table
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+```
+
+## Development Guidelines
+
+### For Client Components
+
+1. Use the `useAuth` hook to access authentication state and Supabase:
+
+```typescript
+'use client';
+
+import { useAuth } from '@/contexts/auth-context';
+
+export default function MyComponent() {
+  const { isSignedIn, userId, supabase } = useAuth();
+  
+  // Use supabase client for data operations
+  const fetchData = async () => {
+    if (!supabase) return;
+    
+    const { data, error } = await supabase
+      .from('my_table')
+      .select('*')
+      .eq('user_id', userId);
+      
+    // Handle data or error
+  };
+  
+  return (
+    // Component JSX
+  );
+}
+```
+
+### For Server Components
+
+1. Use the Clerk `auth()` and `currentUser()` functions:
+
+```typescript
+import { auth, currentUser } from '@clerk/nextjs/server';
+
+export default async function ServerComponent() {
+  const { userId } = await auth();
+  const user = await currentUser();
+  
+  // Use userId for data fetching or other operations
+  
+  return (
+    // Component JSX
+  );
+}
+```
+
+2. For Supabase operations in server components, use the server-side client:
+
+```typescript
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { auth } from '@clerk/nextjs/server';
+
+export default async function ServerComponent() {
+  const { userId } = await auth();
+  
+  // Create server-side Supabase client
+  const supabase = createServerComponentClient({ cookies });
+  
+  // Fetch data
+  const { data } = await supabase
+    .from('my_table')
+    .select('*')
+    .eq('user_id', userId);
+    
+  return (
+    // Component JSX with data
+  );
+}
+```
+
+### For API Routes
+
+1. Use Clerk's `auth()` to authenticate the request:
+
+```typescript
+import { auth } from '@clerk/nextjs/server';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+
+export async function POST(request: Request) {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+  
+  // Create Supabase client for API route
+  const supabase = createRouteHandlerClient({ cookies });
+  
+  // Process request and use Supabase
+  
+  return new Response('Success', { status: 200 });
+}
+```
+
+## Common Pitfalls and Solutions
+
+### 1. "clerkMiddleware not detected" Error
+
+```
+Error: Clerk: auth() was called but Clerk can't detect usage of clerkMiddleware()
+```
+
+**Solution:**
+- Make sure `middleware.ts` exists in the `src` directory
+- Ensure it uses `clerkMiddleware()` from `@clerk/nextjs/server`
+- Verify the matcher includes your route
+
+### 2. Authentication State Not Available
+
+**Solution:**
+- In client components, use `useAuth()` hook
+- In server components, use `auth()` and `currentUser()` 
+- In API routes, use `auth()` to get the current user
+
+### 3. Supabase Client Not Working
+
+**Solution:**
+- In client components, check `supabase` is not null before using
+- Wait for authentication to be loaded (`isLoaded === true`)
+- Ensure proper error handling if database operations fail
+
+## DO NOT
+
+- Do not implement alternative authentication methods
+- Do not create separate middleware for Supabase
+- Do not use different authentication flows for new features
+- Do not use Supabase Auth (we use Clerk exclusively)
+- Do not bypass the existing authentication context or middleware
+
+## Conclusion
+
+This native integration between Clerk and Supabase provides a secure, consistent authentication experience throughout Card Profit Pro. By following these guidelines, you can maintain the security and functionality of the application while developing new features.
+
+For more details:
+- [Clerk Documentation](https://clerk.com/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Next.js Middleware Documentation](https://nextjs.org/docs/app/building-your-application/routing/middleware) 

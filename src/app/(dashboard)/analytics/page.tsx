@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui-migrated/card';
 import { useUser } from '@clerk/nextjs';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui-migrated/alert';
 import { AlertCircle, TrendingUp, TrendingDown, DollarSign, Package } from 'lucide-react';
 import type { Database } from '@/lib/supabase/types';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui-migrated/button';
 
 interface Analytics {
   total_cards: number;

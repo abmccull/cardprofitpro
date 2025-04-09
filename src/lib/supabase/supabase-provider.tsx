@@ -3,13 +3,13 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Database } from './types'
-import { useAuth } from '@clerk/nextjs'
+import { useAuth as useClerkAuth } from '@clerk/nextjs'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 type SupabaseContext = {
-  supabase: ReturnType<typeof createClient<Database>>
+  supabase: ReturnType<typeof createClient<Database>> | null
 }
 
 const Context = createContext<SupabaseContext | undefined>(undefined)
@@ -19,22 +19,63 @@ export default function SupabaseProvider({
 }: {
   children: React.ReactNode
 }) {
-  const { getToken } = useAuth()
-  const [supabase] = useState(() =>
-    createClient<Database>(supabaseUrl, supabaseAnonKey)
-  )
+  const { isLoaded, isSignedIn, getToken } = useClerkAuth()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient<Database>> | null>(null)
 
   useEffect(() => {
-    const updateSupabaseToken = async () => {
-      const token = await getToken({ template: 'supabase' })
-      supabase.auth.setSession({
-        access_token: token || '',
-        refresh_token: '',
+    // Always initialize an anonymous client for non-authenticated actions
+    const initSupabase = async () => {
+      // Initialize a standard client without custom auth
+      const baseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        }
       })
+      
+      // If not authenticated, just use the base client
+      if (!isLoaded || !isSignedIn) {
+        console.log('Initializing anonymous Supabase client')
+        setSupabase(baseClient)
+        return
+      }
+
+      try {
+        // Try to get a token for authenticated access
+        const token = await getToken()
+        if (!token) {
+          console.log('No token available, using anonymous client')
+          setSupabase(baseClient)
+          return
+        }
+        
+        // Create an authenticated client with the token
+        console.log('Initializing authenticated Supabase client')
+        const authClient = createClient<Database>(
+          supabaseUrl,
+          supabaseAnonKey,
+          {
+            auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+            },
+            global: {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          }
+        )
+        
+        setSupabase(authClient)
+      } catch (error) {
+        console.error('Error initializing Supabase client, falling back to anonymous access:', error)
+        setSupabase(baseClient)
+      }
     }
 
-    updateSupabaseToken()
-  }, [getToken, supabase])
+    initSupabase()
+  }, [isLoaded, isSignedIn, getToken])
 
   return (
     <Context.Provider value={{ supabase }}>

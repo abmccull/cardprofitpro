@@ -15,8 +15,8 @@ import {
 } from "@tanstack/react-table"
 import { ArrowUpDown, Loader2 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui-migrated/button"
+import { Input } from "@/components/ui-migrated/input"
 import {
   Table,
   TableBody,
@@ -24,7 +24,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui-migrated/table"
 import { ColumnVisibility } from "./column-visibility"
 import { useSupabase } from "@/lib/supabase/supabase-provider"
 import { useEffect, useState } from "react"

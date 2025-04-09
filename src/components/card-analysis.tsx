@@ -1,9 +1,9 @@
 'use client';
 
 import { useRef } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui-migrated/card';
+import { Button } from '@/components/ui-migrated/button';
+import { Skeleton } from '@/components/ui-migrated/skeleton';
 import { useCardAnalysis } from '@/hooks/use-card-analysis';
 
 interface CardAnalysisProps {

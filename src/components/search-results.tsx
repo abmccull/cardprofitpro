@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui-migrated/card';
+import { Button } from '@/components/ui-migrated/button';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/supabase/types';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui-migrated/use-toast';
 
 interface Player {
   player_id: number;

@@ -1,0 +1,203 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Card Profit Pro - Project Structure
+
+This document provides an overview of the Card Profit Pro project structure, explaining key directories and files with their purposes.
+
+## Root Structure
+
+```
+cardprofitpro/
+├── .git/                 # Git repository data
+├── .next/                # Next.js build output
+├── docs/                 # Project documentation
+├── node_modules/         # Node.js dependencies
+├── public/               # Static assets
+├── src/                  # Source code
+├── supabase/             # Supabase configuration and migrations
+├── scripts/              # Utility scripts
+├── components/           # Common UI components (legacy)
+├── hooks/                # Custom React hooks (legacy)
+├── lib/                  # Utility functions (legacy)
+├── types/                # TypeScript types (legacy)
+├── utils/                # Utility functions (legacy)
+├── .env                  # Environment variables
+├── .env.local            # Local environment variables (git-ignored)
+├── next.config.mjs       # Next.js configuration
+├── package.json          # Project dependencies and scripts
+├── tailwind.config.ts    # Tailwind CSS configuration
+└── tsconfig.json         # TypeScript configuration
+```
+
+## Source Code (`src/`)
+
+The `src/` directory contains the main application code organized according to Next.js App Router conventions and feature-based architecture.
+
+```
+src/
+├── app/                  # Next.js application routes
+├── components/           # Reusable UI components
+├── contexts/             # React context providers
+├── hooks/                # Custom React hooks
+├── lib/                  # Utility functions and libraries
+├── scripts/              # Additional utility scripts
+├── types/                # TypeScript type definitions
+└── middleware.ts         # Next.js middleware (Clerk auth)
+```
+
+### App Directory (`src/app/`)
+
+Contains all Next.js application routes using the App Router architecture:
+
+```
+app/
+├── (auth)/               # Auth-related routes (grouped layout)
+├── (dashboard)/          # Dashboard routes (grouped layout)
+├── about/                # About page
+├── actions/              # Server actions
+├── api/                  # API routes
+├── auth/                 # Auth-specific pages
+├── blog/                 # Blog pages
+├── contact/              # Contact pages
+├── direct-test/          # Testing routes
+├── discover/             # Card discovery feature
+├── login/                # Login page
+├── privacy/              # Privacy policy
+├── terms/                # Terms of service
+├── test/                 # Test routes
+├── test-page/           # Test pages
+├── top-100/              # Top 100 cards feature
+├── layout.tsx            # Root layout
+├── page.tsx              # Homepage
+├── globals.css           # Global CSS
+├── metadata.ts           # App metadata
+└── favicon.ico           # Site favicon
+```
+
+### Components (`src/components/`)
+
+Reusable UI components organized by feature and type:
+
+```
+components/
+├── cards/                # Card-related components
+├── contact/              # Contact form components
+├── dashboard/            # Dashboard-specific components
+├── layout/               # Layout components
+├── providers/            # Provider components
+├── psa/                  # PSA grading-related components
+├── skeletons/            # Loading skeleton components
+├── table/                # Table components
+├── ui/                   # UI components (shadcn/ui)
+├── card-analysis.tsx     # Card analysis component
+├── card-list.tsx         # Card listing component
+├── ebay-connect.tsx      # eBay integration component
+├── navbar.tsx            # Navigation bar
+├── search-*.tsx          # Search-related components
+└── transaction-*.tsx     # Transaction-related components
+```
+
+### Contexts (`src/contexts/`)
+
+React context providers for state management:
+
+```
+contexts/
+└── auth-context.tsx      # Authentication context (Clerk + Supabase)
+```
+
+This file is critical as it manages the integration between Clerk authentication and Supabase, providing auth state and properly initialized Supabase clients to the application.
+
+### Library (`src/lib/`)
+
+Utility functions and configurations:
+
+```
+lib/
+├── supabase/             # Supabase-related utilities
+├── utils/                # General utility functions
+└── api-helpers.ts        # API helper functions
+```
+
+### Types (`src/types/`)
+
+TypeScript type definitions:
+
+```
+types/
+├── database.types.ts     # Supabase database types
+└── index.ts              # Common type definitions
+```
+
+## Supabase Configuration (`supabase/`)
+
+Supabase configuration and database migrations:
+
+```
+supabase/
+├── migrations/           # SQL migrations for database schema
+└── config.toml           # Supabase configuration
+```
+
+## Documentation (`docs/`)
+
+Project documentation:
+
+```
+docs/
+├── feature-updates/      # Documentation for feature updates
+├── auth-integration.mdc  # Authentication integration guide
+└── opportunity-score-implementation.md  # Opportunity Score feature documentation
+```
+
+## Key Files
+
+- **middleware.ts**: Implements Clerk authentication middleware
+- **auth-context.tsx**: Provides authentication state and Supabase client
+- **package.json**: Project dependencies and scripts
+- **next.config.mjs**: Next.js configuration
+- **tailwind.config.ts**: Tailwind CSS configuration
+- **.env.local**: Environment variables (not committed to git)
+
+## Important Features and Implementation
+
+### Authentication
+
+Authentication is implemented using Clerk with native Supabase integration. The auth state is managed through the `AuthContext` provider, which initializes the Supabase client with the Clerk JWT token. This integration allows for secure database access with Row Level Security.
+
+### Opportunity Score Feature
+
+As documented in `docs/opportunity-score-implementation.md`, the application includes an Opportunity Score feature implemented using Supabase Edge Functions. This feature:
+
+- Calculates investment opportunity scores for cards based on multiple weighted factors
+- Updates scores in the database through a Supabase Edge Function
+- Integrates with the Card Profit Pulse dashboard using color-coded indicators
+- Provides filtering and sorting based on opportunity scores
+
+### Database Architecture
+
+The application uses Supabase with:
+- Row Level Security (RLS) for data protection
+- Generated TypeScript types for type safety
+- Native integration with Clerk authentication
+- Edge Functions for complex calculations
+
+### UI Components
+
+The UI is built with:
+- TailwindCSS for styling
+- shadcn/ui component library
+- Custom components organized by feature
+- Server Components where possible, with minimal Client Components
+
+## Development Guidelines
+
+- Favor Server Components and minimize Client Components
+- Follow the established authentication patterns
+- Use generated TypeScript types for database operations
+- Implement proper error handling and loading states
+- Follow naming conventions (kebab-case for files, PascalCase for components)
+- Maintain the established directory structure for new features 

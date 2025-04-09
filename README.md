@@ -132,3 +132,45 @@ To learn more about the technologies used in this project:
 - [Supabase Documentation](https://supabase.com/docs)
 - [Tailwind CSS](https://tailwindcss.com/docs)
 - [shadcn/ui](https://ui.shadcn.com)
+
+# Database Setup and Debugging
+
+## Setting Up the Database
+
+CardProfitPro requires a properly configured Supabase database. There are two ways to set it up:
+
+### Option 1: Manual SQL Setup (Recommended)
+
+Follow the step-by-step guide to manually create the database tables using SQL:
+
+1. Go to your Supabase dashboard and open the SQL Editor
+2. Follow the instructions in [Manual Database Setup Guide](./docs/MANUAL_DB_SETUP.md)
+
+This approach is the most reliable and provides full control over the database structure.
+
+### Option 2: Automated Setup Script (Experimental)
+
+If you have the appropriate permissions, you can try the setup script:
+
+```bash
+# Install dependencies first
+npm install
+
+# Set up the database tables and functions
+npm run setup-db
+```
+
+Note: This script may not work in all environments due to permission restrictions.
+
+## Debug Page
+
+The application includes a debug page at `/debug` that helps troubleshoot database connection issues. It shows:
+
+- Connection status to Supabase
+- Available tables
+- Database schema information
+- Sample card data
+
+If you're experiencing issues, visit the debug page first to diagnose potential problems.
+
+See [Debug and Fix Guide](./docs/DEBUG_AND_FIX.md) for common issues and solutions.

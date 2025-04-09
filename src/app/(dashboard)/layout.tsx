@@ -17,7 +17,7 @@ import {
   LucideIcon
 } from "lucide-react";
 import { MobileNav } from "../../../components/dashboard/mobile-nav";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui-migrated/button";
 import { AuthProvider } from "@/contexts/auth-context";
 
 type NavItem = {

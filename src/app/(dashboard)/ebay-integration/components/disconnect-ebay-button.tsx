@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui-migrated/button";
 import { useState } from "react";
 import { useAuth } from '@/contexts/auth-context';
 import { disconnectEbay } from '../actions'; // Import the server action

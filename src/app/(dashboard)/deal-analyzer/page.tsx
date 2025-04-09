@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui-migrated/card';
+import { Button } from '@/components/ui-migrated/button';
+import { useToast } from '@/components/ui-migrated/use-toast';
+import { Skeleton } from '@/components/ui-migrated/skeleton';
 
 export default function DealAnalyzerPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);

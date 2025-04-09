@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
-import { useToast } from '@/components/ui/use-toast';
+import { Card } from '@/components/ui-migrated/card';
+import { Button } from '@/components/ui-migrated/button';
+import { Input } from '@/components/ui-migrated/input';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui-migrated/form';
+import { useToast } from '@/components/ui-migrated/use-toast';
 import { useSocket } from '@/hooks/use-socket';
 import type { TaskStatus, TaskUpdate } from '@/hooks/use-socket';
 

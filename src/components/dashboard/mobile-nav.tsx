@@ -15,12 +15,12 @@ import {
   Users,
   Settings
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui-migrated/button';
 import { 
   Sheet,
   SheetContent,
   SheetTrigger 
-} from '@/components/ui/sheet';
+} from '@/components/ui-migrated/sheet';
 import { cn } from '@/lib/utils';
 
 // Map of icon names to their components

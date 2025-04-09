@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui-migrated/button';
+import { Input } from '@/components/ui-migrated/input';
+import { Label } from '@/components/ui-migrated/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui-migrated/select';
 
 interface SearchFormProps {
   onSearch: (query: string, filters: {

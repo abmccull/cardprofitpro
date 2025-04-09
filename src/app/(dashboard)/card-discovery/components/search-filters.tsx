@@ -1,15 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui-migrated/button';
+import { Checkbox } from '@/components/ui-migrated/checkbox';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui-migrated/select';
+import { Label } from '@/components/ui-migrated/label';
 
 interface SearchFiltersProps {
   onFiltersChange: (filters: {
@@ -43,18 +44,18 @@ export function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
   return (
     <div className="flex flex-col gap-4 p-4 bg-white rounded-lg shadow">
       <div className="space-y-2">
-        <label className="text-sm font-medium">Sport</label>
-        <Select value={sport} onValueChange={handleSportChange}>
+        <Label htmlFor="sport">Sport</Label>
+        <Select value={sport || 'all'} onValueChange={handleSportChange}>
           <SelectTrigger>
-            <SelectValue placeholder="Select a sport" />
+            <SelectValue placeholder="All Sports" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Sports</SelectItem>
-            <SelectItem value="Baseball">Baseball</SelectItem>
-            <SelectItem value="Football">Football</SelectItem>
-            <SelectItem value="Basketball">Basketball</SelectItem>
-            <SelectItem value="Hockey">Hockey</SelectItem>
-            <SelectItem value="Women's Basketball">Women's Basketball</SelectItem>
+            <SelectItem value="all">All Sports</SelectItem>
+            <SelectItem value="baseball">Baseball</SelectItem>
+            <SelectItem value="basketball">Basketball</SelectItem>
+            <SelectItem value="football">Football</SelectItem>
+            <SelectItem value="hockey">Hockey</SelectItem>
+            <SelectItem value="soccer">Soccer</SelectItem>
           </SelectContent>
         </Select>
       </div>

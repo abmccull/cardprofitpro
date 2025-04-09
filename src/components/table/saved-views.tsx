@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui-migrated/button';
+import { Input } from '@/components/ui-migrated/input';
+import { Label } from '@/components/ui-migrated/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui-migrated/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui-migrated/dialog';
 import { TableView } from '@/hooks/useTableConfig';
 import { 
   Bookmark, 
@@ -18,8 +18,8 @@ import {
   X 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/components/ui/use-toast';
+import { ScrollArea } from '@/components/ui-migrated/scroll-area';
+import { useToast } from '@/components/ui-migrated/use-toast';
 
 interface SavedViewsProps {
   views: TableView[];
@@ -113,7 +113,7 @@ export function SavedViews({
         month: 'short', 
         day: 'numeric' 
       });
-    } catch (e) {
+    } catch {
       return 'Unknown date';
     }
   };

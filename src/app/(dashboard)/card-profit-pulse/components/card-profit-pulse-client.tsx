@@ -1,21 +1,21 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui-migrated/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui-migrated/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui-migrated/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui-migrated/table';
+import { Badge } from '@/components/ui-migrated/badge';
+import { Input } from '@/components/ui-migrated/input';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { AlertCircle, Search, ArrowUpDown, ArrowUp, ArrowDown, Filter, X } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui-migrated/alert';
+import { Skeleton } from '@/components/ui-migrated/skeleton';
+import { Button } from '@/components/ui-migrated/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui-migrated/popover';
+import { Slider } from '@/components/ui-migrated/slider';
+import { Checkbox } from '@/components/ui-migrated/checkbox';
+import { Label } from '@/components/ui-migrated/label';
 
 // Use the explicit interface instead of the Database type
 interface CardAnalytic {

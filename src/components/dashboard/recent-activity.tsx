@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui-migrated/card';
+import { buttonVariants } from '@/components/ui-migrated/button';
 import { cn } from '@/lib/utils';
 import { Activity, Clock } from 'lucide-react';
 

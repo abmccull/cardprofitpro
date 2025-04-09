@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { searchEbayListings } from '@/lib/ebay/client';
+import { Card } from '@/components/ui-migrated/card';
+import { Button } from '@/components/ui-migrated/button';
+import { useToast } from '@/components/ui-migrated/use-toast';
 import { addToWatchlist } from '@/lib/watchlist';
 import { Loader2 } from 'lucide-react';
 
@@ -50,8 +49,42 @@ export function SearchResults({ query, filters }: SearchResultsProps) {
     setError(null);
 
     try {
-      const items = await searchEbayListings(query, filters);
-      setResults(items);
+      // Build query parameters
+      const searchParams = new URLSearchParams({
+        query: query
+      });
+      
+      // Add optional filters
+      if (filters.category) {
+        searchParams.append('category', filters.category);
+      }
+      
+      if (filters.minPrice !== undefined) {
+        searchParams.append('minPrice', filters.minPrice.toString());
+      }
+      
+      if (filters.maxPrice !== undefined) {
+        searchParams.append('maxPrice', filters.maxPrice.toString());
+      }
+      
+      if (filters.condition && filters.condition.length > 0) {
+        searchParams.append('condition', filters.condition.join(','));
+      }
+      
+      if (filters.sortOrder) {
+        searchParams.append('sortOrder', filters.sortOrder);
+      }
+      
+      // Call our server-side API endpoint
+      const response = await fetch(`/api/ebay/search?${searchParams.toString()}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to search eBay listings');
+      }
+      
+      const data = await response.json();
+      setResults(data.results);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to search eBay listings');
       toast({

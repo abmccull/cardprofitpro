@@ -2,11 +2,11 @@
 
 import { useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui-migrated/button';
+import { Input } from '@/components/ui-migrated/input';
+import { Label } from '@/components/ui-migrated/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui-migrated/select';
+import { Card } from '@/components/ui-migrated/card';
 
 interface SearchFormProps {
   onSearch: (query: string, filters: {
@@ -38,8 +38,8 @@ export function SearchForm({ onSearch }: SearchFormProps) {
     if (query) params.set('query', query);
     if (minPrice) params.set('minPrice', minPrice.toString());
     if (maxPrice) params.set('maxPrice', maxPrice.toString());
-    if (condition) params.set('condition', condition);
-    if (sortOrder) params.set('sortOrder', sortOrder);
+    if (condition && condition !== 'any') params.set('condition', condition);
+    if (sortOrder && sortOrder !== 'best_match') params.set('sortOrder', sortOrder);
 
     router.push(`?${params.toString()}`);
 
@@ -47,8 +47,8 @@ export function SearchForm({ onSearch }: SearchFormProps) {
     onSearch(query, {
       minPrice,
       maxPrice,
-      condition: condition ? [condition] : undefined,
-      sortOrder,
+      condition: condition && condition !== 'any' ? [condition] : undefined,
+      sortOrder: sortOrder !== 'best_match' ? sortOrder : undefined,
     });
   };
 
@@ -96,12 +96,12 @@ export function SearchForm({ onSearch }: SearchFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="condition">Condition</Label>
-            <Select name="condition" defaultValue={searchParams.get('condition') || ''}>
+            <Select name="condition" defaultValue={searchParams.get('condition') || 'any'}>
               <SelectTrigger>
                 <SelectValue placeholder="Any condition" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Any condition</SelectItem>
+                <SelectItem value="any">Any condition</SelectItem>
                 <SelectItem value="new">New</SelectItem>
                 <SelectItem value="used">Used</SelectItem>
                 <SelectItem value="not_specified">Not Specified</SelectItem>
@@ -111,12 +111,12 @@ export function SearchForm({ onSearch }: SearchFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="sortOrder">Sort By</Label>
-            <Select name="sortOrder" defaultValue={searchParams.get('sortOrder') || ''}>
+            <Select name="sortOrder" defaultValue={searchParams.get('sortOrder') || 'best_match'}>
               <SelectTrigger>
                 <SelectValue placeholder="Best Match" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Best Match</SelectItem>
+                <SelectItem value="best_match">Best Match</SelectItem>
                 <SelectItem value="StartTimeNewest">Newly Listed</SelectItem>
                 <SelectItem value="CurrentPriceHighest">Highest Price</SelectItem>
                 <SelectItem value="PricePlusShippingLowest">Lowest Price</SelectItem>

@@ -2,8 +2,8 @@ import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { Card } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui-migrated/card';
+import { Skeleton } from '@/components/ui-migrated/skeleton';
 import { CardAnalysis } from '@/components/card-analysis';
 
 interface CardDetailPageProps {

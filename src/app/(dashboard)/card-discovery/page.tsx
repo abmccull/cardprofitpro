@@ -1,50 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { SearchForm } from '@/components/search-form';
-import { SearchResults } from '@/components/search-results';
-import type { Player } from '@/types/player';
 
-interface SearchFilters {
-  sport?: string;
-  product?: string;
-  isRookie?: boolean;
-  minPrice?: number;
-  maxPrice?: number;
-  condition?: string[];
-  sortOrder?: string;
-}
+import { useState } from 'react';
+import { SearchForm } from '@/app/(dashboard)/card-discovery/components/search-form';
+import { SearchResults } from '@/app/(dashboard)/card-discovery/components/search-results';
+
 
 export default function CardDiscoveryPage() {
   const [query, setQuery] = useState('');
-  const [filters, setFilters] = useState<SearchFilters>({});
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [filters, setFilters] = useState({});
 
-  const handleSearch = async (newQuery: string, newFilters: SearchFilters) => {
+  const handleSearch = (newQuery, newFilters) => {
     setQuery(newQuery);
     setFilters(newFilters);
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: newQuery, filters: newFilters }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Search failed');
-      }
-
-      const data = await response.json();
-      setPlayers(data.players);
-    } catch (error) {
-      console.error('Search error:', error);
-      setPlayers([]);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -54,7 +22,7 @@ export default function CardDiscoveryPage() {
       </div>
 
       <SearchForm onSearch={handleSearch} />
-      <SearchResults players={players} isLoading={isLoading} />
+      <SearchResults query={query} filters={filters} />
     </div>
   );
-} 
+}

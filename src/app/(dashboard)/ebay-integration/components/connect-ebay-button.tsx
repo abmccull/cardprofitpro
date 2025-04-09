@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui-migrated/button";
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { storeOauthState } from '../actions'; // Import the server action

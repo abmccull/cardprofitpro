@@ -10,11 +10,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui-migrated/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui-migrated/select';
+import { DatePicker } from '@/components/ui-migrated/date-picker';
+import { Badge } from '@/components/ui-migrated/badge';
+import { Label } from '@/components/ui-migrated/label';
 
 type Transaction = {
   id: string;
@@ -58,13 +58,13 @@ export function TransactionHistory() {
     <div className="space-y-4">
       <div className="grid grid-cols-4 gap-4">
         <div className="space-y-2">
-          <Label>Type</Label>
-          <Select value={type} onValueChange={setType}>
+          <Label htmlFor="type">Type</Label>
+          <Select name="type" value={type || 'all'} onValueChange={(value) => setType(value)}>
             <SelectTrigger>
               <SelectValue placeholder="All types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All types</SelectItem>
+              <SelectItem value="all">All types</SelectItem>
               <SelectItem value="purchase">Purchase</SelectItem>
               <SelectItem value="sale">Sale</SelectItem>
             </SelectContent>
@@ -72,13 +72,13 @@ export function TransactionHistory() {
         </div>
 
         <div className="space-y-2">
-          <Label>Platform</Label>
-          <Select value={platform} onValueChange={setPlatform}>
+          <Label htmlFor="platform">Platform</Label>
+          <Select name="platform" value={platform || 'all'} onValueChange={(value) => setPlatform(value)}>
             <SelectTrigger>
               <SelectValue placeholder="All platforms" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All platforms</SelectItem>
+              <SelectItem value="all">All platforms</SelectItem>
               <SelectItem value="facebook">Facebook</SelectItem>
               <SelectItem value="instagram">Instagram</SelectItem>
               <SelectItem value="tiktok">TikTok</SelectItem>
@@ -125,7 +125,7 @@ export function TransactionHistory() {
               </TableCell>
               <TableCell>{transaction.title}</TableCell>
               <TableCell>
-                <Badge variant={transaction.type === 'purchase' ? 'default' : 'success'}>
+                <Badge variant={transaction.type === 'purchase' ? 'default' : 'secondary'}>
                   {transaction.type}
                 </Badge>
               </TableCell>

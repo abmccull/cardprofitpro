@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { Card } from '@/components/ui-migrated/card';
+import { Button } from '@/components/ui-migrated/button';
+import { useToast } from '@/components/ui-migrated/use-toast';
 import { useSocket } from '@/hooks/use-socket';
 import type { CardStatus } from '@/lib/supabase/types';
 

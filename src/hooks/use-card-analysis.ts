@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui-migrated/use-toast';
 
 interface CardAnalysis {
   analysis: {

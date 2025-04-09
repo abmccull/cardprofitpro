@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardFooter } from "@/components/ui-migrated/card";
+import { Badge } from "@/components/ui-migrated/badge";
 
 export function CardList({ cards, type }) {
   if (!cards.length) {

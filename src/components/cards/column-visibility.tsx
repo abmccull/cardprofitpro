@@ -1,13 +1,13 @@
 import * as React from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui-migrated/checkbox';
+import { Button } from '@/components/ui-migrated/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui-migrated/dropdown-menu";
 import { ChevronsUpDown, GripVertical } from "lucide-react";
 import {
   DndContext,

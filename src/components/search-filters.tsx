@@ -1,9 +1,9 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui-migrated/button';
+import { Checkbox } from '@/components/ui-migrated/checkbox';
+import { Label } from '@/components/ui-migrated/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui-migrated/select';
 import { useState } from 'react';
 
 interface SearchFiltersProps {

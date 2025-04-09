@@ -4,13 +4,13 @@ import * as React from 'react';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { Button } from '@/components/ui-migrated/button';
+import { Calendar } from '@/components/ui-migrated/calendar';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@/components/ui-migrated/popover';
 
 interface DatePickerProps {
   selected?: Date | null;

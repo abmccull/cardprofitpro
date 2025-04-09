@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui-migrated/card';
+import { Button } from '@/components/ui-migrated/button';
 import { AlertCircle, Clock, ExternalLink, TimerOff, Check, AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui-migrated/alert';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { formatDistanceToNow, isPast } from 'date-fns';
 import type { Database } from '@/lib/supabase/types';

@@ -10,7 +10,7 @@ const EBAY_API_URL = 'https://api.ebay.com';
 
 // Create ebay auth client using factory pattern
 const createEbayAuthClient = () => {
-  // @ts-ignore - Handle both ESM and CJS module formats
+  // @ts-expect-error - Handle both ESM and CJS module formats
   const EbayAuthToken = ebayOAuth.EbayAuthToken || ebayOAuth.default?.EbayAuthToken || ebayOAuth;
   return new EbayAuthToken({
     clientId: process.env.EBAY_CLIENT_ID!,
